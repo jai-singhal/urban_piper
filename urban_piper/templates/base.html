@@ -1,0 +1,39 @@
+<!--doctype HTML-->
+{% load staticfiles %}
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta property="og:locale" content="en_US" />
+    <title>
+        {% block title %}
+        {% endblock %}
+    </title>
+    <!-- css cdn includes -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    {% comment %} <link rel="stylesheet" href="{% static 'css/bootstrap_theme.css' %}"> {% endcomment %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans" />
+    <link rel='stylesheet' href='{% static "/css/project.css" %}'>
+    {% block style %}
+    {% endblock style %}
+</head>
+
+<body>
+    {% include "components/navbar.html" %}
+    {% include "components/message.html" %}
+
+    {% block content %}
+    {% endblock %}
+
+    {% include "components/footer.html" %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="{% static 'js/project.js' %}"></script>
+
+    {% block javascript %}
+    {% endblock javascript %}
+</body>
+
+</html>

@@ -1,0 +1,24 @@
+{% load crispy_forms_tags %}
+<div class="modal fade" id="task_modal" tabindex="-1" role="dialog" aria-labelledby="task_modalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="task_modalLabel">Create Delivery Task</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" id="task_form" post_url="{% url 'core:storage_manager' %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{delivery_task_form|crispy}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <input type="submit" class="btn btn-primary" value="Create Task">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

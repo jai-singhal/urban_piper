@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+{% include "create_task_modal.html" %}
+<div class="container">
+    <div class="row justify-content-end">
+        <button type="button" class="btn btn-primary text-right" data-toggle="modal" data-target="#task_modal">Create
+            Delivery Task</button>
+    </div>
+    <br>
+    <div class="row">
+        <table class="table table-bordered" id = "sm-tasktable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Created at</th>
+                    <th>Created by</th>
+                    <th>Buttons</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                    <tr>
+                        <td>{{task.title}}</td>
+                        <td>{{task.creation_at | date:"M d, Y h:m:t"}}</td>
+                        <td>{{task.created_by}}</td>
+                        <td><button class = "btn btn-secondary btn-sm">Check state</button>
+                        <button class = "btn btn-danger btn-sm">Cancel Task</button></td>
+                     </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+<script>
+    $(document).ready(function () {
+
+//        var deliveryPersonSocket = new WebSocket('ws://' + window.location.host + '/ws/dp/');
+        var storageManagerSocket = new WebSocket('ws://' + window.location.host + '/ws/sm/');
+
+
+        storageManagerSocket.onopen = function open() {
+            console.log('WebSockets connection created.');
+        };
+
+        storageManagerSocket.onmessage = function(e) {
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            $("#sm-tasktable tbody").append(`<tr>
+                <td>${message["task"]["title"]}</td>
+                <td>${message["task"]["creation_at"]}</td>
+                <td>${message["task"]["created_by"]}</td>
+                <td><button class = "btn btn-secondary btn-sm">Check state</button>
+                <button class = "btn btn-danger btn-sm">Cancel Task</button></td>
+            </tr>`)
+            console.log(message)
+        };
+
+
+        if (storageManagerSocket.readyState == WebSocket.OPEN) {
+            storageManagerSocket.onopen();
+        }
+
+        $('#task_modal').on('shown.bs.modal', function () {
+            $('#id_title').focus();
+        })
+        $("#task_form").submit(function (e) {
+            e.preventDefault();
+            var serializedData = $(this).serialize();
+            $.ajax({
+                type: 'POST',
+                url: $(this).attr("post_url"),
+                data: serializedData,
+                success: function (response) {
+                    storageManagerSocket.send(JSON.stringify({
+                        "event": "CREATE_TASK",
+                        "message": {
+                            "task": response["task"],
+                            "state": response["state"],
+                        }
+                    }));
+
+                    $("#task_form")[0].reset();
+                    $("#task_modal").modal("hide");
+                },
+                error: function (response) {
+                    console.log(response)
+                    let errors = response["responseJSON"]["errors"];
+                    $.each(errors, function(key, val){
+                        alert(val[1]);
+                        console.log(key, val)
+                    })
+
+                    $('#id_title').focus();
+                }
+            });
+        });
+    });
+</script>
+</script>
+{% endblock %}

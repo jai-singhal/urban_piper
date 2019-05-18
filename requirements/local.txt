@@ -1,0 +1,4 @@
+-r ./base.txt
+
+django-debug-toolbar==1.11  # https://github.com/jazzband/django-debug-toolbar
+django-extensions==2.1.6  # https://github.com/django-extensions/django-extensions
