@@ -8,5 +8,35 @@
 {% endblock %}
 
 
-{% block script %}
+{% block javascript %}
+<script>
+    $(document).ready(function () {
+
+        var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
+
+        taskSocket.onopen = function open() {
+            console.log('WebSockets connection created.');
+            taskSocket.send(JSON.stringify({
+                "event": "JOIN",
+                "message": "dp"
+            }));
+        };
+
+        // Sending the info about the room
+
+
+        taskSocket.onmessage = function(e) {
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            console.log(message, data)
+        };
+
+
+        if (taskSocket.readyState == WebSocket.OPEN) {
+            taskSocket.onopen();
+        }
+
+      
+    });
+</script>
 {% endblock %}

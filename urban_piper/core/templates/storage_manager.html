@@ -42,14 +42,17 @@
     $(document).ready(function () {
 
 //        var deliveryPersonSocket = new WebSocket('ws://' + window.location.host + '/ws/dp/');
-        var storageManagerSocket = new WebSocket('ws://' + window.location.host + '/ws/sm/');
+        var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
 
-
-        storageManagerSocket.onopen = function open() {
+        taskSocket.onopen = function open() {
             console.log('WebSockets connection created.');
+            taskSocket.send(JSON.stringify({
+                "event": "JOIN",
+                "message": "sm"
+            }));
         };
 
-        storageManagerSocket.onmessage = function(e) {
+        taskSocket.onmessage = function(e) {
             var data = JSON.parse(e.data);
             var message = data['message'];
             $("#sm-tasktable tbody").append(`<tr>
@@ -59,12 +62,12 @@
                 <td><button class = "btn btn-secondary btn-sm">Check state</button>
                 <button class = "btn btn-danger btn-sm">Cancel Task</button></td>
             </tr>`)
-            console.log(message)
+            console.log(data)
         };
 
 
-        if (storageManagerSocket.readyState == WebSocket.OPEN) {
-            storageManagerSocket.onopen();
+        if (taskSocket.readyState == WebSocket.OPEN) {
+            taskSocket.onopen();
         }
 
         $('#task_modal').on('shown.bs.modal', function () {
@@ -78,11 +81,10 @@
                 url: $(this).attr("post_url"),
                 data: serializedData,
                 success: function (response) {
-                    storageManagerSocket.send(JSON.stringify({
+                    taskSocket.send(JSON.stringify({
                         "event": "CREATE_TASK",
                         "message": {
                             "task": response["task"],
-                            "state": response["state"],
                         }
                     }));
 
@@ -102,6 +104,5 @@
             });
         });
     });
-</script>
 </script>
 {% endblock %}

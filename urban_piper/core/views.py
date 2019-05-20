@@ -45,25 +45,14 @@ class StorageManagerView(View):
                     "errors": [(k, v[0]) for k, v in form.errors.items()]
                 }, status=400)
 
-            try:
-                state_instance = DeliveryTaskState.objects.create(task_id = task_instance.id)
-            except:
-                return JsonResponse({
-                    "success":False,
-                    "errors": "Error in creating state"
-                }, status=400)
-
             return JsonResponse({
                     "success":True,
                     "task": {
+                        "id": task_instance.id,
                         "title": task_instance.title,
                         "priority": task_instance.priority,
                         "creation_at": task_instance.creation_at,
                         "created_by": task_instance.created_by.username,
-                    }, 
-                    "state": {
-                        "state": state_instance.state,
-                        "created_at": state_instance.created_at
                     }
                 }, status=200
             )

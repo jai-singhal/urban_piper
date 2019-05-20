@@ -31,7 +31,7 @@ INSTALLED_APPS = [
 INSTALLED_APPS += [
     "channels",
     "crispy_forms",
-    "django_rq",
+    # "django_rq",
 
     "urban_piper.core",
     "urban_piper.users",
@@ -127,34 +127,9 @@ STATICFILES_FINDERS = [
 # MEDIA_ROOT = str(ROOT_DIR("mediafiles"))
 MEDIA_URL = "/media/"
 
-# Redis Queues
-RQ_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'PASSWORD': 'root@123',
-        'DEFAULT_TIMEOUT': 360,
-    },
-    'with-sentinel': {
-        'SENTINELS': [('localhost', 26736), ('localhost', 26737)],
-        'MASTER_NAME': 'redismaster',
-        'DB': 0,
-        'PASSWORD': 'secret',
-        'SOCKET_TIMEOUT': None,
-        'CONNECTION_KWARGS': {
-            'socket_connect_timeout': 0.3
-        },
-    },
-    'high': {
-        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
-        'DEFAULT_TIMEOUT': 500,
-    },
-    'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
-}
-# python manage.py rqstats
-RQ_SHOW_ADMIN_LINK = True # /django-rq/stats.json
+# Celery settings
+BROKER_URL = 'redis://localhost:6379/0'  # our redis address
+# use json format for everything
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

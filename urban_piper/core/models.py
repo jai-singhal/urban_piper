@@ -2,6 +2,24 @@ from django.db import models
 from django.utils.translation import gettext as _
 from urban_piper.users.models import User
 
+class DeliveryTaskState(models.Model):
+    state_choices = (
+        ("new", "new"),
+        ("accepted", "accepted"),
+        ("completed", "completed"),
+        ("declined", "declined"),
+        ("cancelled", "cancelled"),
+    )
+    state = models.CharField(choices = state_choices, default = "new", max_length = 12)
+
+    def __str__(self):
+        return "%s" %(self.state)
+
+    class Meta:
+        verbose_name = _("DeliveryTaskState")
+        verbose_name_plural = _("DeliveryTaskStates")
+
+
 class DeliveryTask(models.Model):
     priority_choice_fields = (
         ("high", "High"),
@@ -19,16 +37,7 @@ class DeliveryTask(models.Model):
                     },
                     related_name="created_by_sm"
                 )
-
-    assigned_to = models.ForeignKey(User, 
-                    on_delete= models.CASCADE,
-                    limit_choices_to={
-                        "is_delivery_person":True,
-                        "is_storage_manager": False,
-                    },
-                    null = True, blank = True,
-                    related_name="assigned_to_dp"
-                )
+    state = models.ManyToManyField(DeliveryTaskState, through="DeliveryStateTransition")
 
     class Meta:
         verbose_name = _("DeliveryTask")
@@ -40,23 +49,18 @@ class DeliveryTask(models.Model):
     # def get_absolute_url(self):
     #     return reverse("DeliveryTask_detail", kwargs={"pk": self.pk})
 
-
-class DeliveryTaskState(models.Model):
-    state_choices = (
-        ("new", "new"),
-        ("accepted", "accepted"),
-        ("completed", "completed"),
-        ("declined", "declined"),
-        ("cancelled", "cancelled"),
-    )
-    state = models.CharField(choices = state_choices, default = "new", max_length = 12)
-    created_at = models.DateTimeField(auto_now_add=True)
-    task = models.ForeignKey(DeliveryTask, on_delete = models.CASCADE)
+class DeliveryStateTransition(models.Model):
+    at = models.DateTimeField(auto_now_add= True)
+    task = models.ForeignKey(DeliveryTask, on_delete=models.CASCADE)
+    state = models.ForeignKey(DeliveryTaskState, on_delete=models.CASCADE)
+    by = models.ForeignKey(User, 
+                    on_delete= models.CASCADE,
+                    null = True, blank = True,
+                )
 
     def __str__(self):
-        return "%s_%s" %(self.task.title, self.state)
+        return "%s_%s" %(self.task, self.state)
 
     class Meta:
-        verbose_name = _("DeliveryTaskState")
-        verbose_name_plural = _("DeliveryTaskStates")
-        unique_together = (("state", "task"),)
+        verbose_name = _("DeliveryStateTransition")
+        verbose_name_plural = _("DeliveryStateTransitions")
