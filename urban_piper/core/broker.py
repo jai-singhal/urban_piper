@@ -9,14 +9,6 @@ class RabbitMQBroker(object):
         self.CHANNEL.queue_declare(queue='medium')
         self.CHANNEL.queue_declare(queue='low')
         self.CHANNEL.basic_qos(prefetch_count=1)
-    
-    @property
-    def get_channel(self):
-        return self.CHANNEL
-
-    @property
-    def get_connection(self):
-        return self.CONNECTION
 
     async def basic_publish(self, message):
         self.CHANNEL.basic_publish(exchange='',
@@ -40,3 +32,6 @@ class RabbitMQBroker(object):
             }
             return task
         return None
+
+    async def basic_reject(self, delivery_tag, requeue = True):
+        self.CHANNEL.basic_reject(delivery_tag, requeue = requeue)

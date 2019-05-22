@@ -2,6 +2,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 import json
 from django.conf import settings
+from django.db import transaction
 import threading
 import functools
 import pika
@@ -15,7 +16,6 @@ from .models import (
 
 class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     broker = RabbitMQBroker()
-    mq_channel = broker.get_channel
     group_names = {
             "dp": "delivery_persons",
             "sm": "store_manager"
@@ -81,7 +81,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def create_task(self, message):
         # sending message to sm
-        new_state = await self.create_state(message["task"]["id"], state = "new")
+        await self.create_state(message["task"]["id"], state = "new", by = None)
         await self.broker.basic_publish(message)
         await self.group_send(message, self.group_names["sm"])
         await self.receive_task()
@@ -99,7 +99,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             3. dispatch from the queue, and show the next available task to other users
         """
         print("Task Accepted", message)
-        await self.create_state(message["id"], state = "accepted")
+        await self.create_state(message["id"], state = "accepted", by = self.scope["user"])
         
 
 
@@ -120,7 +120,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         if task:
             self.current_task = task
             # reject the message and requeue it
-            self.mq_channel.basic_reject(int(task["delivery_tag"]), requeue = True)
+            self.broker.basic_reject(int(task["delivery_tag"]), requeue = True)
             print("Message rejected")
 
             await self.group_send(task["message"], self.group_names["dp"])
@@ -132,18 +132,24 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     # def on_message(self, channel, method, properties, body):
     #     print(body)
 
+    @transaction.atomic
     @database_sync_to_async
-    def create_state(self, task_id, state):
-        state_instance = DeliveryTaskState.objects.get(state = state)
-        task_instance = DeliveryTask.objects.get(id = task_id)
-        transition_instance = DeliveryStateTransition(task_id = task_instance.id, state_id = state_instance.id)
-        transition_instance.save()
+    def create_state(self, task_id, state, by = None):
+        try:
+            state_instance = DeliveryTaskState.objects.get(state = state)
+            task_instance = DeliveryTask.objects.get(id = task_id)
+            transition_instance = DeliveryStateTransition(
+                    task_id = task_instance.id, 
+                    state_id = state_instance.id,
+                    by = by
+                )
+            transition_instance.save()
 
-        task_instance.states.add(state_instance)
-        task_instance.save()
-        print(task_instance)
-        return state
-
+            task_instance.states.add(state_instance)
+            task_instance.save()
+            print(task_instance)
+        except Exception as e:
+            print(e)
 
     async def group_send(self, message, group):
         await self.channel_layer.group_send(
