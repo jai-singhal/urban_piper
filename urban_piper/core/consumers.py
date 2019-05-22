@@ -81,15 +81,15 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def create_task(self, message):
         # sending message to sm
-        new_state = await self.create_new_state(message["task"]["id"])
-        
-        self.broker.basic_publish(message)
+        new_state = await self.create_state(message["task"]["id"], state = "new")
+        await self.broker.basic_publish(message)
         await self.group_send(message, self.group_names["sm"])
         await self.receive_task()
 
 
     async def task_cancelled(self, message):
         print("Task Cancelled", message)
+
 
     async def task_accepted(self, message):
         """
@@ -99,6 +99,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             3. dispatch from the queue, and show the next available task to other users
         """
         print("Task Accepted", message)
+        await self.create_state(message["id"], state = "accepted")
+        
+
 
     async def task_declined(self, message):
         print("Task Declined", message)
@@ -130,18 +133,17 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     #     print(body)
 
     @database_sync_to_async
-    def create_new_state(self, task_id):
-        state= DeliveryTaskState.objects.create(state = "new")
-        transition = DeliveryStateTransition(task_id = task_id, state = state)
-        transition.save()
+    def create_state(self, task_id, state):
+        state_instance = DeliveryTaskState.objects.get(state = state)
+        task_instance = DeliveryTask.objects.get(id = task_id)
+        transition_instance = DeliveryStateTransition(task_id = task_instance.id, state_id = state_instance.id)
+        transition_instance.save()
+
+        task_instance.states.add(state_instance)
+        task_instance.save()
+        print(task_instance)
         return state
 
-    @database_sync_to_async
-    def create_accepted_state(self, task_id):
-        state= DeliveryTaskState.objects.create(state = "accepted")
-        transition = DeliveryStateTransition(task_id = task_id, state = state)
-        transition.save()
-        return state
 
     async def group_send(self, message, group):
         await self.channel_layer.group_send(

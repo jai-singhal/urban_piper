@@ -38,7 +38,7 @@ class DeliveryTask(models.Model):
                     },
                     related_name="created_by_sm"
                 )
-    state = models.ManyToManyField(DeliveryTaskState, through="DeliveryStateTransition")
+    states = models.ManyToManyField(DeliveryTaskState, through="DeliveryStateTransition")
 
     class Meta:
         verbose_name = _("DeliveryTask")
@@ -65,3 +65,4 @@ class DeliveryStateTransition(models.Model):
     class Meta:
         verbose_name = _("DeliveryStateTransition")
         verbose_name_plural = _("DeliveryStateTransitions")
+        unique_together = (("task", "state"),)
