@@ -127,11 +127,3 @@ STATICFILES_FINDERS = [
 # MEDIA_ROOT = str(ROOT_DIR("mediafiles"))
 MEDIA_URL = "/media/"
 
-import pika
-PIKA_CONNECTION = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-# PIKA_CONNECTION.add_timeout(1)
-PIKA_CHANNEL = PIKA_CONNECTION.channel()
-PIKA_CHANNEL.queue_declare(queue='high')
-PIKA_CHANNEL.queue_declare(queue='medium')
-PIKA_CHANNEL.queue_declare(queue='low')
-PIKA_CHANNEL.basic_qos(prefetch_count=1)

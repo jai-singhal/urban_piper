@@ -5,8 +5,8 @@ from django.conf import settings
 import threading
 import functools
 import pika
-
-# import django_rq
+from .broker import RabbitMQBroker
+from .events import events
 from .models import (
     DeliveryTaskState, 
     DeliveryTask, 
@@ -14,18 +14,13 @@ from .models import (
 )
 
 class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
-    mq_channel = settings.PIKA_CHANNEL
+    broker = RabbitMQBroker()
+    mq_channel = broker.get_channel
     group_names = {
             "dp": "delivery_persons",
             "sm": "store_manager"
     }
-    events = {
-        "CREATE_TASK": "CREATE_TASK",
-        "JOIN": "JOIN",
-        "TASK_ACCEPTED": "TASK_ACCEPTED",
-        "TASK_DECLINED": "TASK_DECLINED",
-        "TASK_CANCELLED": "TASK_CANCELLED"
-    }
+    events = events
     sm_set = set()
     dp_set = set()
     current_task = None
@@ -87,14 +82,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     async def create_task(self, message):
         # sending message to sm
         new_state = await self.create_new_state(message["task"]["id"])
-        await self.enqueue(message)
-        await self.channel_layer.group_send(
-            self.group_names["sm"],
-            {
-                'type': 'send_message',
-                'message': message,
-            }
-        )
+        
+        self.broker.basic_publish(message)
+        await self.group_send(message, self.group_names["sm"])
         await self.receive_task()
 
 
@@ -114,40 +104,12 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         print("Task Declined", message)
 
 
-
-    # Helping Methods
-    async def enqueue(self, message):
-        print("Enqueue", message)
-        self.mq_channel.basic_publish(exchange='',
-                            routing_key=message["task"]["priority"],
-                            body=json.dumps(message["task"]),
-                            properties=pika.BasicProperties(
-                                delivery_mode = 2, # make message persistent
-                            )
-                    )
-
-
-    async def get_task_from_queue(self, queue):
-        method, prop, message =  self.mq_channel.basic_get(queue, no_ack = False)
-        if not message:
-            print(f"No tasks in {queue} queue")
-        else:
-            print("Message recieved")
-            message = json.loads(message)
-            task = {
-                "message": message,
-                "delivery_tag": method.delivery_tag,
-            }
-            return task
-        return None
-
-
     async def receive_task(self):
-        task = await self.get_task_from_queue(queue="high")
+        task = await self.broker.basic_get(queue="high")
         if not task:
-            task = await self.get_task_from_queue(queue="medium")
+            task = await self.broker.basic_get(queue="medium")
             if not task:
-                task = await self.get_task_from_queue(queue="low")
+                task = await self.broker.basic_get(queue="low")
 
         print(f"Recieved Task {task}")
         print(self.current_task, "Current task")
@@ -158,13 +120,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             self.mq_channel.basic_reject(int(task["delivery_tag"]), requeue = True)
             print("Message rejected")
 
-            await self.channel_layer.group_send(
-                self.group_names["dp"],
-                {
-                    'type': 'send_message',
-                    'message': task["message"],
-                }
-            )
+            await self.group_send(task["message"], self.group_names["dp"])
         else:
             # No task in any queue
             pass
@@ -172,8 +128,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     # def on_message(self, channel, method, properties, body):
     #     print(body)
-    #     self.mq_channel.basic_ack(delivery_tag=method.delivery_tag)
-
 
     @database_sync_to_async
     def create_new_state(self, task_id):
@@ -189,8 +143,17 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         transition.save()
         return state
 
+    async def group_send(self, message, group):
+        await self.channel_layer.group_send(
+            group,
+            {
+                'type': 'send_message',
+                'message': message,
+            }
+        )
+
     async def send_message(self, res):
-        message = res["message"]
         await self.send(text_data=json.dumps({
-            "message": message,
+            "message": res["message"],
         }))
+
