@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.views import View
 from .forms import DeliveryTaskForm
@@ -10,7 +10,6 @@ from .models import (
     DeliveryTaskState, 
     DeliveryStateTransition
 )
-
 
 def index(request):
     return render(request, 'index.html', {})
@@ -31,6 +30,8 @@ class StorageManagerView(LoginRequiredMixin, View):
     
     # @storage_manager_req
     def get(self, *args, **kwargs):
+        if not self.request.user.is_storage_manager:
+            raise Http404 
         # super(StorageManagerView, self).get(*args, **kwargs)
         return render(self.request, self.template_name, self.get_context_data())
 
@@ -89,6 +90,8 @@ class DeliveryPersonView(LoginRequiredMixin, View):
     
     def get(self, *args, **kwargs):
         # super(DeliveryPersonView, self).get(*args, **kwargs)
+        if not self.request.user.is_delivery_person:
+            raise Http404 
         return render(self.request, self.template_name, self.get_context_data())
 
 

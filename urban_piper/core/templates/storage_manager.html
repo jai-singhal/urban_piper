@@ -2,9 +2,15 @@
 
 {% block content %}
 
-
+{% block style %}
+<style>
+    .sm_dashboard {
+        padding-top: 40px;
+    }
+</style>
+{% endblock style %}
 {% include "create_task_modal.html" %}
-<div class="container">
+<div class="container sm_dashboard">
     <div class="row justify-content-end">
         <button type="button" class="btn btn-primary text-right" data-toggle="modal" data-target="#task_modal">Create
             Delivery Task</button>
@@ -47,7 +53,7 @@
         }));
     }
 
-    function display_new_task(taskSocket, message){
+    function display_new_task(taskSocket, message) {
         $("#sm-tasktable tbody").append(`<tr>
             <td hidden class = "hidden id">${message["id"]}</td>
             <td class = "title">${message["title"]}</td>

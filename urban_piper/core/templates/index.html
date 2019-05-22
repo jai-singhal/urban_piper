@@ -1,1 +1,40 @@
 {% extends "base.html" %}
+{% load static %}
+{% block style %}
+<style>
+.hero{
+    background-image:url("{% static 'img/bg2.png' %}");
+}
+</style>
+
+{% endblock %}
+{% block content %}
+
+<div class="container-fluid hero">
+    <div class="row">
+        <div class="inner-text col-6 offset-sm-1">
+            <h1 class="heading">
+                Online Ordering<br>
+                Simplified for your Restaurant
+            </h1>
+            <br>
+            <p>
+                Get your own branded mobile apps and website<br>
+                Understand and engage your customers <br>
+                through a comprehensive CRM, and much more...<br>
+            </p>
+            <br>
+            <div class="row">
+                <div class="landing-primary-button">
+                    <a class="btn btn-default" href="/sm">I am Storage Manager</a>
+                </div>
+                <div class="landing-primary-button">
+                    <a class="btn btn-default" href="/dp">I am Delivery Person</a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock content %}
