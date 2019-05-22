@@ -31,7 +31,7 @@ INSTALLED_APPS = [
 INSTALLED_APPS += [
     "channels",
     "crispy_forms",
-    # "django_rq",
+    'django_celery_results',
 
     "urban_piper.core",
     "urban_piper.users",
@@ -127,9 +127,11 @@ STATICFILES_FINDERS = [
 # MEDIA_ROOT = str(ROOT_DIR("mediafiles"))
 MEDIA_URL = "/media/"
 
-# Celery settings
-BROKER_URL = 'redis://localhost:6379/0'  # our redis address
-# use json format for everything
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+import pika
+PIKA_CONNECTION = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+# PIKA_CONNECTION.add_timeout(1)
+PIKA_CHANNEL = PIKA_CONNECTION.channel()
+PIKA_CHANNEL.queue_declare(queue='high')
+PIKA_CHANNEL.queue_declare(queue='medium')
+PIKA_CHANNEL.queue_declare(queue='low')
+PIKA_CHANNEL.basic_qos(prefetch_count=1)

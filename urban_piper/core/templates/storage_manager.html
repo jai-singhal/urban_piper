@@ -11,7 +11,7 @@
     </div>
     <br>
     <div class="row">
-        <table class="table table-bordered" id = "sm-tasktable">
+        <table class="table table-bordered" id="sm-tasktable">
             <thead>
                 <tr>
                     <th>Title</th>
@@ -22,13 +22,14 @@
             </thead>
             <tbody>
                 {% for task in tasks %}
-                    <tr>
-                        <td>{{task.title}}</td>
-                        <td>{{task.creation_at | date:"M d, Y h:m:t"}}</td>
-                        <td>{{task.created_by}}</td>
-                        <td><button class = "btn btn-secondary btn-sm">Check state</button>
-                        <button class = "btn btn-danger btn-sm">Cancel Task</button></td>
-                     </tr>
+                <tr>
+                    <td hidden class="id hidden">{{task.id}}</td>
+                    <td class="title">{{task.title}}</td>
+                    <td>{{task.creation_at | date:"M d, Y h:m:t"}}</td>
+                    <td>{{task.created_by}}</td>
+                    <td><button class="btn btn-secondary btn-sm">Check state</button>
+                        <button id="cancel_task" class="btn btn-danger btn-sm">Cancel Task</button></td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -39,9 +40,14 @@
 
 {% block javascript %}
 <script>
-    $(document).ready(function () {
+    function task_cancel(taskSocket, message) {
+        taskSocket.send(JSON.stringify({
+            "event": "TASK_CANCELLED",
+            "message": message
+        }));
+    }
 
-//        var deliveryPersonSocket = new WebSocket('ws://' + window.location.host + '/ws/dp/');
+    function connect() {
         var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
 
         taskSocket.onopen = function open() {
@@ -52,18 +58,36 @@
             }));
         };
 
-        taskSocket.onmessage = function(e) {
+        taskSocket.onclose = function (e) {
+            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(function () {
+                connect();
+            }, 1000);
+        };
+
+        taskSocket.onmessage = function (e) {
             var data = JSON.parse(e.data);
             var message = data['message'];
             $("#sm-tasktable tbody").append(`<tr>
-                <td>${message["task"]["title"]}</td>
+                <td hidden class = "hidden id">${message["task"]["id"]}</td>
+                <td class = "title">${message["task"]["title"]}</td>
                 <td>${message["task"]["creation_at"]}</td>
                 <td>${message["task"]["created_by"]}</td>
-                <td><button class = "btn btn-secondary btn-sm">Check state</button>
-                <button class = "btn btn-danger btn-sm">Cancel Task</button></td>
+                <td>
+                <button class = "btn btn-secondary btn-sm">Check state</button>
+                <button id = "cancel_task" class = "btn btn-danger btn-sm">Cancel Task</button>
+                </td>
             </tr>`)
             console.log(data)
         };
+
+        $("#cancel_task").click(function () {
+            let message = {
+                id: $(this).parent().parent().find('.id').text(),
+                title: $(this).parent().parent().find('.title').text()
+            }
+            task_cancel(taskSocket, message);
+        })
 
 
         if (taskSocket.readyState == WebSocket.OPEN) {
@@ -94,7 +118,7 @@
                 error: function (response) {
                     console.log(response)
                     let errors = response["responseJSON"]["errors"];
-                    $.each(errors, function(key, val){
+                    $.each(errors, function (key, val) {
                         alert(val[1]);
                         console.log(key, val)
                     })
@@ -103,6 +127,10 @@
                 }
             });
         });
+    }
+
+    $(document).ready(function () {
+        connect();
     });
 </script>
 {% endblock %}

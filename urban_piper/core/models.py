@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 from urban_piper.users.models import User
 
+
 class DeliveryTaskState(models.Model):
     state_choices = (
         ("new", "new"),
