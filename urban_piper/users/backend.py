@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
-# from .models import StorageManager, DeliveryPerson
 
 # class AuthenticationBackend(ModelBackend):
 

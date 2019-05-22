@@ -25,7 +25,7 @@
                 <tr>
                     <td hidden class="id hidden">{{task.id}}</td>
                     <td class="title">{{task.title}}</td>
-                    <td>{{task.creation_at | date:"M d, Y h:m:t"}}</td>
+                    <td>{{task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
                     <td>{{task.created_by}}</td>
                     <td><button class="btn btn-secondary btn-sm">Check state</button>
                         <button id="cancel_task" class="btn btn-danger btn-sm">Cancel Task</button></td>
@@ -45,6 +45,19 @@
             "event": "TASK_CANCELLED",
             "message": message
         }));
+    }
+
+    function display_new_task(taskSocket, message){
+        $("#sm-tasktable tbody").append(`<tr>
+            <td hidden class = "hidden id">${message["id"]}</td>
+            <td class = "title">${message["title"]}</td>
+            <td>${formatDate(new Date(message["creation_at"]))}</td>
+            <td>${message["created_by"]}</td>
+            <td>
+            <button class = "btn btn-secondary btn-sm">Check state</button>
+            <button id = "cancel_task" class = "btn btn-danger btn-sm">Cancel Task</button>
+            </td>
+        </tr>`)
     }
 
     function connect() {
@@ -67,19 +80,22 @@
 
         taskSocket.onmessage = function (e) {
             var data = JSON.parse(e.data);
-            var message = data['message'];
-            $("#sm-tasktable tbody").append(`<tr>
-                <td hidden class = "hidden id">${message["task"]["id"]}</td>
-                <td class = "title">${message["task"]["title"]}</td>
-                <td>${message["task"]["creation_at"]}</td>
-                <td>${message["task"]["created_by"]}</td>
-                <td>
-                <button class = "btn btn-secondary btn-sm">Check state</button>
-                <button id = "cancel_task" class = "btn btn-danger btn-sm">Cancel Task</button>
-                </td>
-            </tr>`)
-            console.log(data)
+            data = data["payload"];
+            var message = data['task'];
+            let event = data["event"];
+            switch (event) {
+                case "NEW_TASK":
+                    display_new_task(taskSocket, message);
+                    break;
+                case "ACCEPTED_TASK":
+                    // display_accepted_task(taskSocket, message);
+                    break;
+
+                default:
+                    console.log("No event")
+            }
         };
+
 
         $("#cancel_task").click(function () {
             let message = {

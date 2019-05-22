@@ -1,29 +1,32 @@
 from django.shortcuts import render
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views import View
-import json
 from .forms import DeliveryTaskForm
-from .models import DeliveryTask, DeliveryTaskState
-from urban_piper.users.decorators import (
-    storage_manager_req,
-    delivery_person_req
+from .models import (
+    DeliveryTask, 
+    DeliveryTaskState, 
+    DeliveryStateTransition
 )
+
 
 def index(request):
     return render(request, 'index.html', {})
 
 
-class StorageManagerView(View):
+class StorageManagerView(LoginRequiredMixin, View):
     template_name = "storage_manager.html"
     form_class = DeliveryTaskForm
+    login_url = '/accounts/login/'
+    redirect_field_name = 'sm/'
 
     # @storage_manager_req
     def get_context_data(self, **kwargs):
         context = {}
         context["delivery_task_form"] = self.form_class()
-        context["tasks"] = DeliveryTask.objects.all()
+        context["tasks"] = DeliveryTask.objects.filter(created_by = self.request.user)
         return context
     
     # @storage_manager_req
@@ -61,11 +64,22 @@ class StorageManagerView(View):
 
 
 
-class DeliveryPersonView(View):
+class DeliveryPersonView(LoginRequiredMixin, View):
     template_name = "delivery_person.html"
+    login_url = '/accounts/login/'
+    redirect_field_name = 'dp/'
 
+    def get_context_data(self, **kwargs):
+        context = {}
+        context["accepted_tasks"] = DeliveryStateTransition.objects.filter(
+            state__state = "accepted", 
+            by = self.request.user
+        )
+        return context
+
+    
     def get(self, *args, **kwargs):
         # super(DeliveryPersonView, self).get(*args, **kwargs)
-        return render(self.request, self.template_name, {})
+        return render(self.request, self.template_name, self.get_context_data())
 
 

@@ -8,7 +8,7 @@ class RabbitMQBroker(object):
         self.CHANNEL.queue_declare(queue='high')
         self.CHANNEL.queue_declare(queue='medium')
         self.CHANNEL.queue_declare(queue='low')
-        self.CHANNEL.basic_qos(prefetch_count=1)
+        # self.CHANNEL.basic_qos(prefetch_count=1)
 
     async def basic_publish(self, message):
         self.CHANNEL.basic_publish(exchange='',
@@ -24,7 +24,6 @@ class RabbitMQBroker(object):
         if not message:
             print(f"No tasks in {queue} queue")
         else:
-            print("Message recieved")
             message = json.loads(message)
             task = {
                 "message": message,
@@ -35,3 +34,10 @@ class RabbitMQBroker(object):
 
     async def basic_reject(self, delivery_tag, requeue = True):
         self.CHANNEL.basic_reject(delivery_tag, requeue = requeue)
+
+    async def basic_consume(self, queue, callback, no_ack = False):
+        self.CHANNEL.basic_consume(self.on_message, queue,  no_ack=True)
+        self.CHANNEL.basic_qos(prefetch_count=1)
+
+    def on_message(self, channel, method, properties, body):
+        print(body, channel, method, "Xxxxxxxxxxxxxxxxx"*10)

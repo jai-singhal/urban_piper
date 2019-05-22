@@ -5,7 +5,7 @@ from .models import DeliveryTask
 class DeliveryTaskForm(ModelForm):
     class Meta:
         model = DeliveryTask
-        exclude = ("created_by", "creation_at", "assigned_to", "state")
+        exclude = ("created_by", "creation_at", "assigned_to", "states")
 
     def __init__(self, *args, **kwargs):
         super(DeliveryTaskForm, self).__init__(*args, **kwargs)

@@ -1,10 +1,8 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
-import json
-from django.conf import settings
 from django.db import transaction
+import json
 import threading
-import functools
 import pika
 from .broker import RabbitMQBroker
 from .events import events
@@ -21,9 +19,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "sm": "store_manager"
     }
     events = events
-    sm_set = set()
-    dp_set = set()
-    current_task = None
 
     async def connect(self):
         requser = self.scope["user"]
@@ -72,18 +67,29 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             self.group_names[group_name],
             self.channel_name,
         )
+        # INdividual person group format: user-{dp/sm}-{username}
+        await self.channel_layer.group_add(
+            "user-%s-%s" %(self.group_names[group_name], self.scope["user"].username),
+            self.channel_name,
+        )
+
         if group_name == "dp":
-            self.dp_set.add(self.channel_name)
             await self.receive_task()
         elif group_name == "sm":
-            self.sm_set.add(self.channel_name)
+            pass
             
 
     async def create_task(self, message):
         # sending message to sm
         await self.create_state(message["task"]["id"], state = "new", by = None)
         await self.broker.basic_publish(message)
-        await self.group_send(message, self.group_names["sm"])
+        message["event"] = self.events["NEW_TASK"]
+        # await self.group_send(message, self.group_names["sm"])
+        await self.group_send(
+            message, 
+            "user-%s-%s" %(self.group_names["sm"], self.scope["user"].username)
+        )    
+
         await self.receive_task()
 
 
@@ -94,14 +100,28 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     async def task_accepted(self, message):
         """
         TODO: 
-            1. Create new state: Accepted, assign to the task with task_id
-            2. Assign the task to the current Delivery Person
-            3. dispatch from the queue, and show the next available task to other users
+            1. Create new state: Accepted, assign to the task with task_id, and t dp
+            2. dispatch from the queue, and show the next available task to other users
+            3. Check if the user have more than 3 pending task
         """
-        print("Task Accepted", message)
-        await self.create_state(message["id"], state = "accepted", by = self.scope["user"])
-        
-
+        total_pending_state = self.check_total_pending_tasks(user = self.scope["user"])
+        if not total_pending_state:
+            await self.create_state(message["id"], state = "accepted", by = self.scope["user"])
+            payload = {
+                "event": self.events["TASK_ACCEPTED"],
+                "message": message
+            }
+            await self.broker.basic_consume(message["priority"], self.on_message, False)
+            await self.receive_task()
+        else:
+            payload = {
+                "event": self.events["TASK_PENDING"],
+                "message": "USER EXCEEDS TOTAL PENDING TASKS"
+            }    
+        await self.group_send(
+            payload, 
+            "user-%s-%s" %(self.group_names["dp"], self.scope["user"].username)
+        )    
 
     async def task_declined(self, message):
         print("Task Declined", message)
@@ -114,23 +134,25 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             if not task:
                 task = await self.broker.basic_get(queue="low")
 
-        print(f"Recieved Task {task}")
-        print(self.current_task, "Current task")
+        print(f"Recieved Task: {task}")
 
         if task:
-            self.current_task = task
             # reject the message and requeue it
-            self.broker.basic_reject(int(task["delivery_tag"]), requeue = True)
-            print("Message rejected")
-
-            await self.group_send(task["message"], self.group_names["dp"])
+            await self.broker.basic_reject(int(task["delivery_tag"]), requeue = True)
+            message = {
+                "event": self.events["NEW_TASK"],
+                "message": task["message"]
+            }
         else:
-            # No task in any queue
-            pass
+            message = {
+                "event": self.events["NEW_TASK"],
+                "message": None
+            }
+            
+        await self.group_send(message, self.group_names["dp"])
 
-
-    # def on_message(self, channel, method, properties, body):
-    #     print(body)
+    def on_message(self, channel, method, properties, body):
+        print(body)
 
     @transaction.atomic
     @database_sync_to_async
@@ -147,9 +169,20 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
             task_instance.states.add(state_instance)
             task_instance.save()
-            print(task_instance)
+            return True
         except Exception as e:
             print(e)
+            return False
+
+    @transaction.atomic
+    def check_total_pending_tasks(self, user):
+        total_pending_task = DeliveryStateTransition.objects.filter(
+                state__state="accepted", by = user).count()
+        if total_pending_task >= 3:
+            return True
+        else:
+            return False
+
 
     async def group_send(self, message, group):
         await self.channel_layer.group_send(
@@ -162,6 +195,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def send_message(self, res):
         await self.send(text_data=json.dumps({
-            "message": res["message"],
+            "payload": res["message"],
         }))
 

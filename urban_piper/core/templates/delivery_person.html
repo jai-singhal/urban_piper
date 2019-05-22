@@ -3,61 +3,159 @@
 {% block style %}
 <style>
     .dp_task_pos {
-        margin-top: 120px;
+        margin-top: 80px;
+    }
+
+    .dp_acceptedtask_pos {
+        margin-top: 50px;
+    }
+
+    .btn {
+        margin-left: 5px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container d-flex h-60">
+<div class="container h-60">
     <div class="col-12 dp_task_pos">
-        <div class = "card">
+        <div class="card">
             <div class="card-header">
-                <h6 class="text-muted">You will get task here.</h6>    
+                <p class="text-muted">You will get task here.</p>
             </div>
-        <div id="task_card">
-            <div class='card w-100'>
-                <div class="card-body">
-                    <h5 class="text-danger">No Task available for you right now</h5>
+            <div id="new_task_card">
+                <div class='card'>
+                    <div class="card-body">
+                        <h6 class="text-danger">No new Task available for you right now</h6>
+                    </div>
                 </div>
             </div>
         </div>
-        </div>
-
     </div>
+
+    <div class="col-12 dp_acceptedtask_pos">
+        <div class="card">
+            <div class="card-header">
+                <p class="text-muted">Your accepted tasks will be shown below.</p>
+            </div>
+            <div id="accepted_task_card">
+                <div class='card w-100'>
+                    <div class="card-body" id="task_accepted_body">
+                        {% if accepted_tasks %}
+                        {% for task in accepted_tasks %}
+                        <div class='card'>
+                            <div class="card-body">
+                                <h5 class="card-title">{{task.task.title}}</h5>
+                                <p>Created at: {{task.task.creation_at| date:"d/m/Y g:i:s A"|lower}}</p>
+                            </div>
+                            <div class="card-footer">
+                                <button id="task_completed" class="btn btn-primary float-right">
+                                    Complete
+                                </button>
+                                <button id="task_decline" class="btn btn-danger float-right">
+                                    Decline
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        {% else %}
+                        <h6 class="text-danger" id = "no_accepted_task">
+                            You haven't accepted any Task
+                        </h6>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 {% endblock %}
 
 
 {% block javascript %}
 <script>
-function formatDate(date) {
-  var hours = date.getHours();
-  var minutes = date.getMinutes();
-  var seconds = date.getSeconds();
-  var ampm = hours >= 12 ? 'pm' : 'am';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // the hour '0' should be '12'
-  minutes = minutes < 10 ? '0'+minutes : minutes;
-  var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-  return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
-}
-
-function task_accepted(taskSocket, message){
-    taskSocket.send(JSON.stringify({
-        "event": "TASK_ACCEPTED",
-        "message": message
-    }));
-}
 
 
-function task_declined(taskSocket, message){
-    taskSocket.send(JSON.stringify({
-        "event": "TASK_DECLINED",
-        "message": message
-    }));
+    function task_accepted(taskSocket, message) {
+        taskSocket.send(JSON.stringify({
+            "event": "TASK_ACCEPTED",
+            "message": message
+        }));
+    }
 
-}
+
+    function task_declined(taskSocket, message) {
+        taskSocket.send(JSON.stringify({
+            "event": "TASK_DECLINED",
+            "message": message
+        }));
+
+    }
+
+    function display_new_task(taskSocket, message) {
+        let html_content;
+        if (message) {
+            html_content = `<div class = 'card'>
+                <div class = "card-header">
+                    <p>New Task Recieved:
+                         Priority: <span class = "text-danger"> ${message["priority"]}</span>
+                    </p>
+                </div>
+                <div class = "card-body">
+                    <h5 class="card-title">${message["title"]}</h5>
+                    <p>Created at: ${formatDate(new Date(message["creation_at"])) }</p>
+                </div>
+                <div class = "card-footer">
+                    <button id = "task_accept" 
+                        class = "btn btn-primary float-right">Accept</button>
+                    <button id = "task_decline" 
+                        class = "btn btn-danger float-right">Decline</button>
+                </div>
+            </div>`;
+        } else {
+            html_content = `
+                <div class='card'>
+                    <div class="card-body">
+                        <h6 class="text-danger">No new Task available for you right now</h6>
+                    </div>
+                </div>
+            `;
+        }
+
+        $("#new_task_card").html(html_content);
+        $("#task_accept").click(function () {
+            task_accepted(taskSocket, message);
+        })
+        $("#task_decline").click(function () {
+            task_declined(taskSocket, message);
+        })
+    }
+
+    function display_accepted_task(taskSocket, message) {
+        if($("#no_accepted_task").length){
+            $("#no_accepted_task").remove();
+        }
+
+        $("#task_accepted_body").append(`
+         <div class='card'>
+            <div class="card-body" >
+                <h5 class="card-title">${message["title"]}</h5>
+                <p>Created at: ${formatDate(new Date(message["creation_at"]))}</p>
+            </div>
+            <div class="card-footer">
+                <button id="task_completed" class="btn btn-primary float-right">
+                    Complete
+                </button>
+                <button id="task_decline" class="btn btn-danger float-right">
+                    Decline
+                </button>
+            </div>
+        </div>
+        `)
+    }
+
 
     function connect() {
         var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
@@ -77,35 +175,25 @@ function task_declined(taskSocket, message){
             }, 1000);
         };
         // Sending the info about the room
-
         taskSocket.onmessage = function (e) {
-            var data = JSON.parse(e.data);
-            var message = data['message'];
-            let html_content = `<div class = 'card'>
-                <div class = "card-header">
-                    <p>New Task Recieved:
-                         Priority: <span class = "text-danger"> ${message["priority"]}</span>
-                    </p>
-                </div>
-                <div class = "card-body">
-                    <h5 class="card-title">${message["title"]}</h5>
-                    <p>Created at: ${formatDate(new Date(message["creation_at"])) }</p>
-                </div>
-                <div class = "card-footer">
-                    <button id = "task_accept" 
-                        class = "btn btn-primary float-right">Accept</button>
-                    <button id = "task_decline" 
-                        class = "btn btn-danger float-right">Decline</button>
-                </div>
-            </div>`
-            $("#task_card").html(html_content);
-            $("#task_accept").click(function(){
-                task_accepted(taskSocket, message);
-            })
-            $("#task_decline").click(function(){
-                task_declined(taskSocket, message);
-            })
-            console.log(message, data)
+            let data = JSON.parse(e.data);
+            data = data["payload"];
+            let message = data['message'];
+            let event = data["event"];
+            console.log(event)
+            switch (event) {
+                case "NEW_TASK":
+                    display_new_task(taskSocket, message);
+                    break;
+                case "TASK_ACCEPTED":
+                    display_accepted_task(taskSocket, message);
+                    break;
+                case "TASK_PENDING":
+                    alert(message)
+                    break;
+                default:
+                    console.log("No event")
+            }
         };
 
         if (taskSocket.readyState == WebSocket.OPEN) {
