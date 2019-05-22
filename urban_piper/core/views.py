@@ -71,15 +71,25 @@ class DeliveryPersonView(LoginRequiredMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
-        context["accepted_tasks"] = DeliveryStateTransition.objects.filter(
+        user_tasks = DeliveryStateTransition.objects.filter(by = self.request.user)
+        non_pending_tasks = user_tasks.filter(
             state__state = "accepted", 
-            by = self.request.user
+        ).values("task__id", "task__title", "task__creation_at").difference(
+            user_tasks.filter(
+                state__state = "completed", 
+            ).values("task__id", "task__title", "task__creation_at")
+        ).difference(
+            user_tasks.filter(
+                state__state = "declined", 
+            ).values("task__id", "task__title", "task__creation_at")
         )
+        context["non_pending_tasks"] = non_pending_tasks
         return context
 
     
     def get(self, *args, **kwargs):
         # super(DeliveryPersonView, self).get(*args, **kwargs)
         return render(self.request, self.template_name, self.get_context_data())
+
 
 

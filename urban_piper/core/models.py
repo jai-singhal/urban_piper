@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext as _
+from django.core.serializers.json import DjangoJSONEncoder
 from urban_piper.users.models import User
-
+import json
 
 class DeliveryTaskState(models.Model):
     state_choices = (
@@ -19,6 +20,18 @@ class DeliveryTaskState(models.Model):
     class Meta:
         verbose_name = _("DeliveryTaskState")
         verbose_name_plural = _("DeliveryTaskStates")
+
+
+class DeliveryTaskManager(models.Manager):
+    def get_object_in_json(self, task_id):
+        task = self.get(id = task_id)
+        return json.dumps({
+            "id": task.id,
+            "title": task.title,
+            "priority": task.priority,
+            "creation_at": task.creation_at,
+            "created_by": task.created_by.username
+        }, cls=DjangoJSONEncoder)
 
 
 class DeliveryTask(models.Model):
@@ -39,6 +52,8 @@ class DeliveryTask(models.Model):
                     related_name="created_by_sm"
                 )
     states = models.ManyToManyField(DeliveryTaskState, through="DeliveryStateTransition")
+
+    objects = DeliveryTaskManager()
 
     class Meta:
         verbose_name = _("DeliveryTask")

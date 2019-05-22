@@ -53,6 +53,8 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
         elif event == self.events["TASK_ACCEPTED"]:
             await self.task_accepted(message)
+        elif event == self.events["TASK_COMPLETED"]:
+            await self.task_completed(message)
         elif event == self.events["TASK_DECLINED"]:
             await self.task_declined(message)
 
@@ -99,7 +101,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def task_accepted(self, message):
         """
-        TODO: 
+        TODO STEPS: 
             1. Create new state: Accepted, assign to the task with task_id, and t dp
             2. dispatch from the queue, and show the next available task to other users
             3. Check if the user have more than 3 pending task
@@ -123,9 +125,49 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" %(self.group_names["dp"], self.scope["user"].username)
         )    
 
-    async def task_declined(self, message):
-        print("Task Declined", message)
 
+    async def task_declined(self, message):
+        """
+        TODO STEPS: 
+            1. Create new state: declined.
+            2. Remove the task from user-dp dashboard
+            3. Enqueue this task to queue
+            4. Send this task to all dp-users
+        """
+        await self.create_state(message["id"], state = "declined", by = self.scope["user"])
+        payload = {
+            "event": self.events["TASK_DECLINED_ACK"],
+            "message": {"id": message["id"]} # only need id to identify
+        }
+        await self.group_send(
+            payload, 
+            "user-%s-%s" %(self.group_names["dp"], self.scope["user"].username)
+        )
+
+        task = self.get_task(message["id"])
+        message = {
+            "task": json.loads(task)
+        }
+        await self.broker.basic_publish(message)
+        await self.receive_task()
+
+
+    async def task_completed(self, message):
+        """
+        TODO STEPS: 
+            1. Create new state: Completed.
+            2. Remove the task from user-dp dashboard
+        """
+        await self.create_state(message["id"], state = "completed", by = self.scope["user"])
+        payload = {
+            "event": self.events["TASK_COMPLETED_ACK"],
+            "message": {"id": message["id"]} # only need id to identify
+        }
+        await self.group_send(
+            payload, 
+            "user-%s-%s" %(self.group_names["dp"], self.scope["user"].username)
+        )   
+        
 
     async def receive_task(self):
         task = await self.broker.basic_get(queue="high")
@@ -151,8 +193,10 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             
         await self.group_send(message, self.group_names["dp"])
 
+
     def on_message(self, channel, method, properties, body):
         print(body)
+
 
     @transaction.atomic
     @database_sync_to_async
@@ -174,17 +218,33 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             print(e)
             return False
 
+
     @transaction.atomic
     def check_total_pending_tasks(self, user):
-        total_pending_task = DeliveryStateTransition.objects.filter(
-                state__state="accepted", by = user).count()
+        """
+            Returns True if no. of states of dp user which 
+            is in pending states(accepted but not completed and declined)
+            is greater than 3
+            Return False otherwise
+        """
+        user_tasks = DeliveryStateTransition.objects.filter(by = self.request.user)
+        total_pending_task = user_tasks.filter(
+                state__state = "accepted").values("task").difference(
+                    user_tasks.filter(state__state = "completed")).values("task").difference(
+                            user_tasks.filter(state__state = "declined")).values("task").count()
         if total_pending_task >= 3:
             return True
         else:
             return False
 
 
+    def get_task(self, task_id):
+        return DeliveryTask.objects.get_object_in_json(task_id)
+
     async def group_send(self, message, group):
+        """
+            Helping method: SENDS the message to the group
+        """
         await self.channel_layer.group_send(
             group,
             {
@@ -194,6 +254,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def send_message(self, res):
+        """
+            Callback for group_send()
+        """
         await self.send(text_data=json.dumps({
             "payload": res["message"],
         }))

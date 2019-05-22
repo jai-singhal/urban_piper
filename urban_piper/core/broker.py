@@ -40,4 +40,4 @@ class RabbitMQBroker(object):
         self.CHANNEL.basic_qos(prefetch_count=1)
 
     def on_message(self, channel, method, properties, body):
-        print(body, channel, method, "Xxxxxxxxxxxxxxxxx"*10)
+        print(body, channel, method)
