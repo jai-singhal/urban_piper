@@ -197,6 +197,15 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" % (self.group_names["sm"], task["created_by"])
         )
 
+        await self.group_send(
+            {
+                "event": self.events["TASK_DECLINED_ACK_SM"],
+                "message": {"id": message["id"], "task": task["title"]}
+            },
+            "user-%s-%s" % (self.group_names["sm"], task["created_by"])
+        )
+
+
         await self.receive_task()
 
     async def task_completed(self, message):

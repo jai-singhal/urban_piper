@@ -34,10 +34,13 @@ function connect() {
                 display_states(taskSocket, message);
                 break;
             case "UPDATE_STATE":
-                update_state(taskSocket, message);
+                update_state( message);
                 break;
             case "TASK_CANCELLED_ACK":
-                delete_task(taskSocket, message);
+                delete_task( message);
+                break;
+            case "TASK_DECLINED_ACK_SM":
+                task_declined(message);
                 break;
             default:
                 console.log("No event")
@@ -158,11 +161,25 @@ function display_states(taskSocket, message) {
     $("#list_state_modal").modal("show")
 }
 
-function update_state(taskSocket, message) {
+function update_state( message) {
     $(`tr[data-id=${message["id"]}] button.cancel_task`).remove();
     $(`tr[data-id=${message["id"]}] span.current_state`).html(message["state"]);
 }
 
-function delete_task(taskSocket, message) {
+function delete_task( message) {
     $(`tr[data-id=${message["id"]}]`).remove();
+}
+
+function task_declined(message){
+    $(".sm_dashboard").prepend(
+        `<div class="alert alert-info" role="alert">
+        <strong class = 'text-primary'>${message["task"]}</strong> has been 
+        <strong class = 'text-danger'>declined</strong>!!
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+
+      </div>`
+    ).fadeIn(500);
+
 }
