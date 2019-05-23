@@ -6,11 +6,11 @@ import json
 
 class DeliveryTaskState(models.Model):
     state_choices = (
-        ("new", "new"),
-        ("accepted", "accepted"),
-        ("completed", "completed"),
-        ("declined", "declined"),
-        ("cancelled", "cancelled"),
+        ("new", "New"),
+        ("accepted", "Accepted"),
+        ("completed", "Completed"),
+        ("declined", "Declined"),
+        ("cancelled", "Cancelled"),
     )
     state = models.CharField(choices = state_choices, default = "new", max_length = 12)
 
@@ -65,6 +65,24 @@ class DeliveryTask(models.Model):
     # def get_absolute_url(self):
     #     return reverse("DeliveryTask_detail", kwargs={"pk": self.pk})
 
+
+class DeliveryStateTransitionManager(models.Manager):
+    def get_states_in_json(self, task_id):
+        data = {
+            "state" : []
+        }
+        for transition in self.filter(task_id = task_id).order_by("at"):
+            title = transition.task.title
+            data["state"].append(json.loads(json.dumps({
+                "at": transition.at,
+                "state": transition.state.state,
+                "by": transition.by.username if transition.by else None,
+            }, cls=DjangoJSONEncoder)))
+        data["title"] = title
+
+        return data
+
+
 class DeliveryStateTransition(models.Model):
     at = models.DateTimeField(auto_now_add= True)
     task = models.ForeignKey(DeliveryTask, on_delete=models.CASCADE)
@@ -80,4 +98,6 @@ class DeliveryStateTransition(models.Model):
     class Meta:
         verbose_name = _("DeliveryStateTransition")
         verbose_name_plural = _("DeliveryStateTransitions")
-        unique_together = (("task", "state"),)
+        unique_together = (("task", "state", "by"),)
+
+    objects = DeliveryStateTransitionManager()
