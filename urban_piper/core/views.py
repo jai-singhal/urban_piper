@@ -2,10 +2,11 @@ from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
 from django.http import JsonResponse, Http404
+from django.db.models import Case, When, Value, IntegerField, Max, Count
 from django.contrib import messages
 from django.views import View
-from .forms import DeliveryTaskForm
-from .models import (
+from urban_piper.core.forms import DeliveryTaskForm
+from urban_piper.core.models import (
     DeliveryTask, 
     DeliveryTaskState, 
     DeliveryStateTransition
@@ -81,19 +82,27 @@ class DeliveryPersonView(LoginRequiredMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
-        user_tasks = DeliveryStateTransition.objects.filter(by = self.request.user)
-        non_pending_tasks = user_tasks.filter(
-            state__state = "accepted", 
-        ).values("task__id", "task__title", "task__creation_at").difference(
-            user_tasks.filter(
-                state__state = "completed", 
-            ).values("task__id", "task__title", "task__creation_at")
-        ).difference(
-            user_tasks.filter(
-                state__state = "declined", 
-            ).values("task__id", "task__title", "task__creation_at")
-        )
-        context["non_pending_tasks"] = non_pending_tasks
+        user_tasks = DeliveryTask.objects.filter(
+            states__deliverystatetransition__by = self.request.user).distinct()
+        context["pending_tasks"] = []
+
+        for task in user_tasks:
+            if task.states.all().order_by(
+                "-deliverystatetransition__at"
+            ).first().state == "accepted":
+                context["pending_tasks"].append(task)
+                
+        # context["pending_tasks"] = user_tasks.filter(
+        #     state__state = "accepted", 
+        # ).values("task__id", "task__title", "task__creation_at").difference(
+        #     user_tasks.filter(
+        #         state__state = "completed", 
+        #     ).values("task__id", "task__title", "task__creation_at")
+        # ).difference(
+        #     user_tasks.filter(
+        #         state__state = "declined", 
+        #     ).values("task__id", "task__title", "task__creation_at")
+        # )
         return context
 
     
@@ -104,4 +113,17 @@ class DeliveryPersonView(LoginRequiredMixin, View):
         return render(self.request, self.template_name, self.get_context_data())
 
 
+
+# DeliveryStateTransition.objects.filter(by = 2).values("task_id").annotate(
+#     latest=Max('at'),
+#     state
+# ).annotate(
+#  x = Case(
+#     When(state__state = "accepted", then=1),
+#     default=0,
+#     output_field=IntegerField()
+#     )
+# ).filter(x = 1).annotate(
+#     accepted= Count("task_id")
+# ).values("task_id", "x", )
 

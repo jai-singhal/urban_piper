@@ -42,12 +42,12 @@
             <div id="accepted_task_card">
                 <div class='card w-100'>
                     <div class="card-body" id="task_accepted_body">
-                        {% if non_pending_tasks %}
-                        {% for task in non_pending_tasks %}
-                        <div class='card' data-id="{{task.task__id}}">
+                        {% if pending_tasks %}
+                        {% for task in pending_tasks %}
+                        <div class='card' data-id="{{task.id}}">
                             <div class="card-body">
-                                <h5 class="card-title">{{task.task__title}}</h5>
-                                <p>Created at: {{task.task__creation_at| date:"d/m/Y g:i:s A"|lower}}</p>
+                                <h5 class="card-title">{{task.title}}</h5>
+                                <p>Created at: {{task.creation_at| date:"d/m/Y g:i:s A"|lower}}</p>
                             </div>
                             <div class="card-footer">
                                 <button class="btn btn-primary float-right task_completed">
@@ -116,9 +116,6 @@
                 <div class = "card-footer">
                     <button id = "task_accept" 
                         class = "btn btn-primary float-right">Accept</button>
-                    <button id = "task_decline" 
-                        class = "btn btn-danger float-right">Decline</button>
-                </div>
             </div>`;
         } else {
             html_content = `
@@ -160,8 +157,9 @@
     }
 
     function remove_accepted_card(message) {
+        console.log("Remove accepted card")
         $(`div.card[data-id=${message["id"]}]`).remove();
-        if ($("#task_accepted_body").length) {
+        if (!$.trim($("#task_accepted_body").html()).length) {
             $("#task_accepted_body").html(`
                 <h6 class="text-danger" id = "no_accepted_task">
                     You haven't accepted any Task
@@ -170,9 +168,8 @@
         }
     }
 
+    var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
     function connect() {
-        var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
-
         taskSocket.onopen = function open() {
             console.log('WebSockets connection created.');
             taskSocket.send(JSON.stringify({
@@ -193,7 +190,6 @@
             data = data["payload"];
             let message = data['message'];
             let event = data["event"];
-            console.log(event)
             switch (event) {
                 case "NEW_TASK":
                     display_new_task(taskSocket, message);
@@ -206,11 +202,9 @@
                     break;
                 case "TASK_COMPLETED_ACK":
                     remove_accepted_card(message);
-
                     break;
                 case "TASK_DECLINED_ACK":
                     remove_accepted_card(message);
-
                     break;
 
                 default:
@@ -218,29 +212,25 @@
             }
         };
 
-
-        $(".task_completed").click(function () {
-            let message = {
-                id: $(this).parents(".card").attr("data-id"),
-            }
-            task_completed(taskSocket, message);
-        })
-
-        $(".task_declined").click(function () {
-            let message = {
-                id: $(this).parents(".card").attr("data-id"),
-            }
-            task_declined(taskSocket, message);
-        })
-
-
         if (taskSocket.readyState == WebSocket.OPEN) {
             taskSocket.onopen();
         }
     }
 
-    $(document).ready(function () {
-        connect();
+    $(document).on('click', ".task_completed", function () {
+        let message = {
+            id: $(this).parents(".card").attr("data-id"),
+        }
+        task_completed(taskSocket, message);
     });
+    
+    $(document).on('click', ".task_declined", function () {
+        let message = {
+            id: $(this).parents(".card").attr("data-id"),
+        }
+        task_declined(taskSocket, message);
+    });
+
+    connect();
 </script>
 {% endblock %}

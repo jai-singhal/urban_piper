@@ -25,13 +25,13 @@ class DeliveryTaskState(models.Model):
 class DeliveryTaskManager(models.Manager):
     def get_object_in_json(self, task_id):
         task = self.get(id = task_id)
-        return json.dumps({
+        return json.loads(json.dumps({
             "id": task.id,
             "title": task.title,
             "priority": task.priority,
             "creation_at": task.creation_at,
             "created_by": task.created_by.username
-        }, cls=DjangoJSONEncoder)
+        }, cls=DjangoJSONEncoder))
 
 
 class DeliveryTask(models.Model):
@@ -98,6 +98,6 @@ class DeliveryStateTransition(models.Model):
     class Meta:
         verbose_name = _("DeliveryStateTransition")
         verbose_name_plural = _("DeliveryStateTransitions")
-        unique_together = (("task", "state", "by"),)
+        unique_together = (("task", "state", "by", "at"),)
 
     objects = DeliveryStateTransitionManager()

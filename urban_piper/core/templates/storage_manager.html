@@ -30,7 +30,7 @@
     </div>
     <br>
     <div class="row">
-        <div class='col-10 offset-md-1'>
+        <div class='col-md-10 col-sm-12 col-lg-10 offset-md-1'>
             <table class="table table-bordered" id="sm-tasktable">
                 <thead>
                     <tr>
@@ -43,13 +43,16 @@
                     {% for task in tasks %}
                     <tr data-id="{{task.task.id}}">
                         <td class="title">{{task.task.title}}
-                            <span class="badge badge-primary">{{task.current_state.state}}
+                            <span class="badge badge-primary badge-pill current_state">
+                                {{task.current_state.state | title}}
                                 {% comment %} by {{task.current_state.by}} {% endcomment %}
                             </span>
                         </td>
                         <td>{{task.task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
                         <td><button class="btn btn-secondary btn-sm list_state">List States</button><br>
+                            {% ifequal task.current_state.state|stringformat:"s" "new" %}
                             <button class="btn btn-danger btn-sm cancel_task">Cancel Task</button>
+                            {% endifequal %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -64,6 +67,114 @@
 
 {% block javascript %}
 <script>
+    var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
+
+    function connect() {
+        taskSocket.onopen = function open() {
+            console.log('WebSockets connection created.');
+            taskSocket.send(JSON.stringify({
+                "event": "JOIN",
+                "message": "sm"
+            }));
+        };
+
+        if (taskSocket.readyState == WebSocket.OPEN) {
+            taskSocket.onopen();
+        }
+
+        taskSocket.ondisconnect = function (e){
+            console.log('Socket is Disconnected. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(function () {
+                taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
+                connect();
+            }, 1000);
+        }
+
+        taskSocket.onclose = function (e) {
+            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(function () {
+                connect();
+            }, 1000);
+        };
+
+        taskSocket.onmessage = function (e) {
+            var data = JSON.parse(e.data);
+            data = data["payload"];
+            let event = data["event"];
+            let message = data["message"];
+            switch (event) {
+                case "NEW_TASK":
+                    display_new_task(taskSocket, message);
+                    break;
+                case "LIST_STATES_REPLY":
+                    display_states(taskSocket, message);
+                    break;
+                case "UPDATE_STATE":
+                    update_state(taskSocket, message);
+                    break;
+                case "TASK_CANCELLED_ACK":
+                    delete_task(taskSocket, message);
+                    break;
+                default:
+                    console.log("No event")
+            }
+        };
+    }
+    connect();
+
+
+    $(document).on('click', ".cancel_task", function () {
+        let message = {
+            id: $(this).parents("tr").attr("data-id"),
+        }
+        task_cancel(taskSocket, message);
+    });
+
+
+
+    $(document).on('click', ".list_state", function () {
+        let message = {
+            id: $(this).parents("tr").attr("data-id"),
+        }
+        list_states(taskSocket, message);
+    });
+
+
+    $("#task_form").submit(function (e) {
+        e.preventDefault();
+        var serializedData = $(this).serialize();
+        $.ajax({
+            type: 'POST',
+            url: $(this).attr("post_url"),
+            data: serializedData,
+            success: function (response) {
+                taskSocket.send(JSON.stringify({
+                    "event": "CREATE_TASK",
+                    "message": {
+                        "task": response["task"],
+                    }
+                }));
+
+                $("#task_form")[0].reset();
+                $("#task_modal").modal("hide");
+            },
+            error: function (response) {
+                console.log(response)
+                let errors = response["responseJSON"]["errors"];
+                $.each(errors, function (key, val) {
+                    alert(val[1]);
+                    console.log(key, val)
+                })
+
+                $('#id_title').focus();
+            }
+        });
+    });
+
+    $('#task_modal').on('shown.bs.modal', function () {
+        $('#id_title').focus();
+    })
+
     function task_cancel(taskSocket, message) {
         taskSocket.send(JSON.stringify({
             "event": "TASK_CANCELLED",
@@ -78,11 +189,15 @@
         }));
     }
 
-
     function display_new_task(taskSocket, message) {
-        $("#sm-tasktable tbody").append(`<tr data-id="${message["id"]}">
-            <td class = "title">${message["title"]}</td>
-            <td>${formatDate(new Date(message["creation_at"]))}</td>
+
+        $("#sm-tasktable tbody").append(`<tr data-id="${message["task"]["id"]}">
+            <td class = "title">${message["task"]["title"]}
+                <span class="badge badge-primary badge-pill current_state">
+                    New
+                </span>
+            </td>
+            <td>${formatDate(new Date(message["task"]["creation_at"]))}</td>
             <td>
             <button class="btn btn-secondary btn-sm list_state">List States</button><br>
             <button class="btn btn-danger btn-sm cancel_task">Cancel Task</button>
@@ -118,106 +233,15 @@
         content += "</div>";
         $("#list_state_body").html(content);
         $("#list_state_modal").modal("show")
-        console.log(message, "X")
     }
 
-    function connect() {
-        var taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
-
-        taskSocket.onopen = function open() {
-            console.log('WebSockets connection created.');
-            taskSocket.send(JSON.stringify({
-                "event": "JOIN",
-                "message": "sm"
-            }));
-        };
-
-        taskSocket.onclose = function (e) {
-            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-            setTimeout(function () {
-                connect();
-            }, 1000);
-        };
-
-        taskSocket.onmessage = function (e) {
-            var data = JSON.parse(e.data);
-            console.log(data)
-            data = data["payload"];
-            let event = data["event"];
-
-            switch (event) {
-                case "NEW_TASK":
-                    display_new_task(taskSocket, data['task']);
-                    break;
-                case "LIST_STATES_REPLY":
-                    display_states(taskSocket, data["message"]);
-                    break;
-
-                default:
-                    console.log("No event")
-            }
-        };
-
-
-        $(".cancel_task").click(function () {
-            let message = {
-                id: $(this).parents("tr").attr("data-id"),
-            }
-            task_cancel(taskSocket, message);
-        })
-
-        $(".list_state").click(function () {
-            let message = {
-                id: $(this).parents("tr").attr("data-id"),
-            }
-            list_states(taskSocket, message);
-        })
-
-        $(".list_state").click(function () {
-
-        })
-
-        if (taskSocket.readyState == WebSocket.OPEN) {
-            taskSocket.onopen();
-        }
-
-        $('#task_modal').on('shown.bs.modal', function () {
-            $('#id_title').focus();
-        })
-        $("#task_form").submit(function (e) {
-            e.preventDefault();
-            var serializedData = $(this).serialize();
-            $.ajax({
-                type: 'POST',
-                url: $(this).attr("post_url"),
-                data: serializedData,
-                success: function (response) {
-                    taskSocket.send(JSON.stringify({
-                        "event": "CREATE_TASK",
-                        "message": {
-                            "task": response["task"],
-                        }
-                    }));
-
-                    $("#task_form")[0].reset();
-                    $("#task_modal").modal("hide");
-                },
-                error: function (response) {
-                    console.log(response)
-                    let errors = response["responseJSON"]["errors"];
-                    $.each(errors, function (key, val) {
-                        alert(val[1]);
-                        console.log(key, val)
-                    })
-
-                    $('#id_title').focus();
-                }
-            });
-        });
+    function update_state(taskSocket, message) {
+        $(`tr[data-id=${message["id"]}] button.cancel_task`).remove();
+        $(`tr[data-id=${message["id"]}] span.current_state`).html(message["state"]);
     }
 
-    $(document).ready(function () {
-        connect();
-    });
+    function delete_task(taskSocket, message) {
+        $(`tr[data-id=${message["id"]}]`).remove();
+    }
 </script>
 {% endblock %}

@@ -57,3 +57,6 @@ body{
     font-weight: bold;
     text-transform: uppercase;
 }
+.badge-pill{
+    padding:8px;
+}

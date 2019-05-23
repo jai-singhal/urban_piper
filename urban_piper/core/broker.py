@@ -3,7 +3,12 @@ import json
 
 class RabbitMQBroker(object):
     def __init__(self):
-        self.CONNECTION = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        self.CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host = 'localhost',
+                socket_timeout=10,
+            )
+        )
         self.CHANNEL = self.CONNECTION.channel()
         self.CHANNEL.queue_declare(queue='high')
         self.CHANNEL.queue_declare(queue='medium')
@@ -16,28 +21,26 @@ class RabbitMQBroker(object):
                     body=json.dumps(message["task"]),
                     properties=pika.BasicProperties(
                         delivery_mode = 2, # make message persistent
-                    )
+                    ),
             )
+
 
     async def basic_get(self, queue):
         method, prop, message =  self.CHANNEL.basic_get(queue, no_ack = False)
-        if not message:
-            print(f"No tasks in {queue} queue")
-        else:
-            message = json.loads(message)
-            task = {
-                "message": message,
+        if message:
+            return {
+                "message": json.loads(message),
                 "delivery_tag": method.delivery_tag,
             }
-            return task
         return None
 
     async def basic_reject(self, delivery_tag, requeue = True):
         self.CHANNEL.basic_reject(delivery_tag, requeue = requeue)
 
     async def basic_consume(self, queue, no_ack = True):
-        self.CHANNEL.basic_consume(self.on_message, queue,  no_ack=no_ack)
         self.CHANNEL.basic_qos(prefetch_count=1)
+        self.CHANNEL.basic_consume(self.on_message, queue,  no_ack=no_ack)
+        
 
     def on_message(self, channel, method, properties, body):
         print(body, channel, method)
