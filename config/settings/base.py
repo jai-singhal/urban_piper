@@ -24,15 +24,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-INSTALLED_APPS += [
+THIRD_PARTY_APPS = [
     "channels",
     "crispy_forms",
-    'django_celery_results',
+]
 
+LOCAL_APPS = [
     "urban_piper.core",
     "urban_piper.users",
-
 ]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -122,3 +125,11 @@ STATICFILES_FINDERS = [
 # MEDIA
 # MEDIA_ROOT = str(ROOT_DIR("mediafiles"))
 MEDIA_URL = "/media/"
+
+
+#ampq settings
+AMPQ_URL = env("AMPQ_URL")
+AMPQ_HOSTNAME = env("AMPQ_HOSTNAME")
+AMPQ_PASSWORD = env("AMPQ_PASSWORD")
+AMPQ_USER = env("AMPQ_USER")
+AMPQ_PORT = env("AMPQ_PORT")

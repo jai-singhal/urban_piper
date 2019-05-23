@@ -1,29 +1,33 @@
 import pika
 import json
+from django.conf import settings
 
 
 class RabbitMQBroker(object):
     def __init__(self):
-        self.CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host='localhost',
-                socket_timeout=10,
-            )
-        )
+        params = pika.URLParameters(settings.AMPQ_URL)
+        params.socket_timeout = 5
+
+        self.CONNECTION = pika.BlockingConnection(params)
         self.CHANNEL = self.CONNECTION.channel()
-        self.CHANNEL.queue_declare(queue='high')
-        self.CHANNEL.queue_declare(queue='medium')
-        self.CHANNEL.queue_declare(queue='low')
+        self.CHANNEL.queue_declare(queue='high', durable=True)
+        self.CHANNEL.queue_declare(queue='medium', durable=True)
+        self.CHANNEL.queue_declare(queue='low', durable=True)
         self.CHANNEL.basic_qos(prefetch_count=1)
 
     async def basic_publish(self, message):
-        self.CHANNEL.basic_publish(exchange='',
-                                   routing_key=message["task"]["priority"],
-                                   body=json.dumps(message["task"]),
-                                   properties=pika.BasicProperties(
-                                       delivery_mode=2,  # make message persistent
-                                   ),
-                                   )
+        self.CHANNEL.confirm_delivery()
+        successful = self.CHANNEL.basic_publish(exchange='',
+                                                routing_key=message["task"]["priority"],
+                                                body=json.dumps(
+                                                    message["task"]),
+                                                properties=pika.BasicProperties(
+                                                    delivery_mode=2,  # make message persistent
+                                                ),
+                                                )
+        if not successful:
+            await self.basic_publish(message)
+        print("Basic publish", successful)
 
     async def basic_get(self, queue):
         method, prop, message = self.CHANNEL.basic_get(queue, no_ack=False)
