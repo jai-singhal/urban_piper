@@ -291,11 +291,14 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             is greater than 3
             Return False otherwise
         """
-        user_tasks = DeliveryStateTransition.objects.filter(by = user)
-        total_pending_task = user_tasks.filter(
-                state__state = "accepted").values("task").difference(
-                    user_tasks.filter(state__state = "completed")).values("task").difference(
-                            user_tasks.filter(state__state = "declined")).values("task").count()
+        user_tasks = DeliveryTask.objects.filter(
+                states__deliverystatetransition__by = user
+            ).distinct()
+        total_pending_task = 0
+        for task in user_tasks:
+            if task.states.all().order_by("-deliverystatetransition__at").first().state == "accepted":
+                pending_tasks += 1
+
         if total_pending_task >= 3:
             return True
         else:

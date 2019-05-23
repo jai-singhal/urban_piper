@@ -12,7 +12,7 @@ class DeliveryTaskState(models.Model):
         ("declined", "Declined"),
         ("cancelled", "Cancelled"),
     )
-    state = models.CharField(choices = state_choices, default = "new", max_length = 12)
+    state = models.CharField(choices = state_choices, default = "new", max_length = 12, db_index=True)
 
     def __str__(self):
         return "%s" %(self.state)
@@ -84,12 +84,13 @@ class DeliveryStateTransitionManager(models.Manager):
 
 
 class DeliveryStateTransition(models.Model):
-    at = models.DateTimeField(auto_now_add= True)
+    at = models.DateTimeField(auto_now_add = True, db_index = True)
     task = models.ForeignKey(DeliveryTask, on_delete=models.CASCADE)
     state = models.ForeignKey(DeliveryTaskState, on_delete=models.CASCADE)
     by = models.ForeignKey(User, 
                     on_delete= models.CASCADE,
                     null = True, blank = True,
+                    db_index = True
                 )
 
     def __str__(self):
