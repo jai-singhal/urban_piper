@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.safestring import mark_safe
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse
 from django.contrib import messages
 from django.views import View
 from .forms import DeliveryTaskForm
@@ -10,6 +10,7 @@ from .models import (
     DeliveryTaskState, 
     DeliveryStateTransition
 )
+
 
 def index(request):
     return render(request, 'index.html', {})
@@ -25,22 +26,11 @@ class StorageManagerView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = {}
         context["delivery_task_form"] = self.form_class()
-        tasks = DeliveryTask.objects.filter(created_by = self.request.user)
-        context["tasks"] = []
-        for task in tasks:
-            context["tasks"].append({
-                "current_state": DeliveryStateTransition.objects.filter(
-                                    task = task
-                                ).order_by("-at").first(),
-                "task": task
-            })
-
+        context["tasks"] = DeliveryTask.objects.filter(created_by = self.request.user)
         return context
     
     # @storage_manager_req
     def get(self, *args, **kwargs):
-        if not self.request.user.is_storage_manager:
-            raise Http404 
         # super(StorageManagerView, self).get(*args, **kwargs)
         return render(self.request, self.template_name, self.get_context_data())
 
@@ -81,27 +71,15 @@ class DeliveryPersonView(LoginRequiredMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
-        user_tasks = DeliveryStateTransition.objects.filter(by = self.request.user)
-        non_pending_tasks = user_tasks.filter(
+        context["accepted_tasks"] = DeliveryStateTransition.objects.filter(
             state__state = "accepted", 
-        ).values("task__id", "task__title", "task__creation_at").difference(
-            user_tasks.filter(
-                state__state = "completed", 
-            ).values("task__id", "task__title", "task__creation_at")
-        ).difference(
-            user_tasks.filter(
-                state__state = "declined", 
-            ).values("task__id", "task__title", "task__creation_at")
+            by = self.request.user
         )
-        context["non_pending_tasks"] = non_pending_tasks
         return context
 
     
     def get(self, *args, **kwargs):
         # super(DeliveryPersonView, self).get(*args, **kwargs)
-        if not self.request.user.is_delivery_person:
-            raise Http404 
         return render(self.request, self.template_name, self.get_context_data())
-
 
 

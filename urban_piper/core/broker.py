@@ -35,9 +35,9 @@ class RabbitMQBroker(object):
     async def basic_reject(self, delivery_tag, requeue = True):
         self.CHANNEL.basic_reject(delivery_tag, requeue = requeue)
 
-    async def basic_consume(self, queue, no_ack = True):
-        self.CHANNEL.basic_consume(self.on_message, queue,  no_ack=no_ack)
+    async def basic_consume(self, queue, callback, no_ack = False):
+        self.CHANNEL.basic_consume(self.on_message, queue,  no_ack=True)
         self.CHANNEL.basic_qos(prefetch_count=1)
 
     def on_message(self, channel, method, properties, body):
-        print(body, channel, method)
+        print(body, channel, method, "Xxxxxxxxxxxxxxxxx"*10)

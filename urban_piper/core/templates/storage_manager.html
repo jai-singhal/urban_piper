@@ -2,62 +2,38 @@
 
 {% block content %}
 
-{% block style %}
-<style>
-    .sm_dashboard {
-        padding-top: 40px;
-    }
 
-    .list_state {
-        margin-bottom: 4px;
-    }
-
-    #list_state_body {
-        overflow-x: auto;
-    }
-
-    .margin-below {
-        margin-bottom: 12px;
-    }
-</style>
-{% endblock style %}
 {% include "create_task_modal.html" %}
-{% include "list_states_modal.html" %}
-<div class="container sm_dashboard">
+<div class="container">
     <div class="row justify-content-end">
-        <button type="button" class="btn btn-primary text-right" data-toggle="modal" data-target="#task_modal">
-            Create Delivery Task</button>
+        <button type="button" class="btn btn-primary text-right" data-toggle="modal" data-target="#task_modal">Create
+            Delivery Task</button>
     </div>
     <br>
     <div class="row">
-        <div class='col-10 offset-md-1'>
-            <table class="table table-bordered" id="sm-tasktable">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Created at</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for task in tasks %}
-                    <tr data-id="{{task.task.id}}">
-                        <td class="title">{{task.task.title}}
-                            <span class="badge badge-primary">{{task.current_state.state}}
-                                {% comment %} by {{task.current_state.by}} {% endcomment %}
-                            </span>
-                        </td>
-                        <td>{{task.task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
-                        <td><button class="btn btn-secondary btn-sm list_state">List States</button><br>
-                            <button class="btn btn-danger btn-sm cancel_task">Cancel Task</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <table class="table table-bordered" id="sm-tasktable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Created at</th>
+                    <th>Created by</th>
+                    <th>Buttons</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td hidden class="id hidden">{{task.id}}</td>
+                    <td class="title">{{task.title}}</td>
+                    <td>{{task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
+                    <td>{{task.created_by}}</td>
+                    <td><button class="btn btn-secondary btn-sm">Check state</button>
+                        <button id="cancel_task" class="btn btn-danger btn-sm">Cancel Task</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-
 </div>
 {% endblock %}
 
@@ -71,54 +47,17 @@
         }));
     }
 
-    function list_states(taskSocket, message) {
-        taskSocket.send(JSON.stringify({
-            "event": "LIST_STATES",
-            "message": message
-        }));
-    }
-
-
-    function display_new_task(taskSocket, message) {
-        $("#sm-tasktable tbody").append(`<tr data-id="${message["id"]}">
+    function display_new_task(taskSocket, message){
+        $("#sm-tasktable tbody").append(`<tr>
+            <td hidden class = "hidden id">${message["id"]}</td>
             <td class = "title">${message["title"]}</td>
             <td>${formatDate(new Date(message["creation_at"]))}</td>
+            <td>${message["created_by"]}</td>
             <td>
-            <button class="btn btn-secondary btn-sm list_state">List States</button><br>
-            <button class="btn btn-danger btn-sm cancel_task">Cancel Task</button>
+            <button class = "btn btn-secondary btn-sm">Check state</button>
+            <button id = "cancel_task" class = "btn btn-danger btn-sm">Cancel Task</button>
             </td>
         </tr>`)
-    }
-
-    function display_states(taskSocket, message) {
-        let content = "";
-        $("#list_task_title").html(message["title"])
-        $.each(message["state"], function (i, item) {
-            content += `
-            ${ ((i == 0 || i%3 == 0) && "<div class = 'row margin-below'>") || "" }
-            <div class = 'col-4'>
-                <div class = 'card'>
-                    <div class = "card-header">
-                        State - ${i+1}
-                    </div>
-                    <div class = 'card-body'>
-                        <p> A state <span class = 'font-weight-bold text-success '>
-                        ${item["state"]}</span>
-                        created at <span class = 'font-weight-bold text-warning'>
-                            ${formatDate(new Date(item["at"]))}
-                        </span> by <span class ='text-info font-weight-bold'>
-                        ${item["by"] || ""} </span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            ${ ((i != 0 && (i+1)%3 == 0) && "</div>") || "" }
-            `;
-        })
-        content += "</div>";
-        $("#list_state_body").html(content);
-        $("#list_state_modal").modal("show")
-        console.log(message, "X")
     }
 
     function connect() {
@@ -141,16 +80,15 @@
 
         taskSocket.onmessage = function (e) {
             var data = JSON.parse(e.data);
-            console.log(data)
             data = data["payload"];
+            var message = data['task'];
             let event = data["event"];
-
             switch (event) {
                 case "NEW_TASK":
-                    display_new_task(taskSocket, data['task']);
+                    display_new_task(taskSocket, message);
                     break;
-                case "LIST_STATES_REPLY":
-                    display_states(taskSocket, data["message"]);
+                case "ACCEPTED_TASK":
+                    // display_accepted_task(taskSocket, message);
                     break;
 
                 default:
@@ -159,23 +97,14 @@
         };
 
 
-        $(".cancel_task").click(function () {
+        $("#cancel_task").click(function () {
             let message = {
-                id: $(this).parents("tr").attr("data-id"),
+                id: $(this).parent().parent().find('.id').text(),
+                title: $(this).parent().parent().find('.title').text()
             }
             task_cancel(taskSocket, message);
         })
 
-        $(".list_state").click(function () {
-            let message = {
-                id: $(this).parents("tr").attr("data-id"),
-            }
-            list_states(taskSocket, message);
-        })
-
-        $(".list_state").click(function () {
-
-        })
 
         if (taskSocket.readyState == WebSocket.OPEN) {
             taskSocket.onopen();
