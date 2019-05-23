@@ -12,4 +12,4 @@ class DeliveryTaskForm(ModelForm):
         for field in self.fields:
             self.fields[field].widget.attrs.update({
                 'class': 'form-control',
-                "name":"username"})
+                "name": "username"})

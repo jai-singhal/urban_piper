@@ -1,6 +1,4 @@
 import os
-
-
 import environ
 
 ROOT_DIR = (
@@ -8,8 +6,6 @@ ROOT_DIR = (
 )  # (urban_piper/config/settings/base.py - 3 = urban_piper/)
 APPS_DIR = ROOT_DIR.path("urban_piper")
 env = environ.Env()
-
-
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -81,7 +77,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-AUTH_USER_MODEL = "users.User" 
+AUTH_USER_MODEL = "users.User"
 
 DATABASES = {
     'default': {
@@ -126,4 +122,3 @@ STATICFILES_FINDERS = [
 # MEDIA
 # MEDIA_ROOT = str(ROOT_DIR("mediafiles"))
 MEDIA_URL = "/media/"
-
