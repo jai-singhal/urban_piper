@@ -57,3 +57,10 @@ LOGGING = {
         },
     },
 }
+
+# Your stuff...
+# ------------------------------------------------------------------------------
+INSTALLED_APPS += ["whitenoise"]
+MIDDLEWARE += ['whitenoise.middleware.WhiteNoiseMiddleware']
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+SERVE_MEDIA_FILES = True
