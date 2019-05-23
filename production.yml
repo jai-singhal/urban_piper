@@ -21,7 +21,7 @@ services:
     command: /start
     ports:
       - "80:80"
-      - "5000:5000"
+      - "8000:8000"
 
 
   postgres:

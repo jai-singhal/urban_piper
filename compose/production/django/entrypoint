@@ -43,3 +43,6 @@ done
 >&2 echo 'PostgreSQL is available'
 
 exec "$@"
+
+cd /config
+daphne -e ssl:443:privateKey=privatekey.pem:certKey=fullchain.pem -u /tmp/daphne.sock -p 8000 routing:application -b 0.0.0.0
