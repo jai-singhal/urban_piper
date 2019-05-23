@@ -25,7 +25,16 @@ class StorageManagerView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = {}
         context["delivery_task_form"] = self.form_class()
-        context["tasks"] = DeliveryTask.objects.filter(created_by = self.request.user)
+        tasks = DeliveryTask.objects.filter(created_by = self.request.user)
+        context["tasks"] = []
+        for task in tasks:
+            context["tasks"].append({
+                "current_state": DeliveryStateTransition.objects.filter(
+                                    task = task
+                                ).order_by("-at").first(),
+                "task": task
+            })
+
         return context
     
     # @storage_manager_req

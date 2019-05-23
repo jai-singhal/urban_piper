@@ -57,6 +57,8 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             await self.task_completed(message)
         elif event == self.events["TASK_DECLINED"]:
             await self.task_declined(message)
+        elif event == self.events["LIST_STATES"]:
+            await self.list_states(message)
 
         # except Exception as e:
         #     await self.send_json({"error": str(e)})
@@ -113,7 +115,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 "event": self.events["TASK_ACCEPTED"],
                 "message": message
             }
-            await self.broker.basic_consume(message["priority"], self.on_message, False)
+            await self.broker.basic_consume(message["priority"], True)
             await self.receive_task()
         else:
             payload = {
@@ -159,15 +161,23 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             2. Remove the task from user-dp dashboard
         """
         await self.create_state(message["id"], state = "completed", by = self.scope["user"])
-        payload = {
-            "event": self.events["TASK_COMPLETED_ACK"],
-            "message": {"id": message["id"]} # only need id to identify
-        }
+
         await self.group_send(
-            payload, 
+            {
+                "event": self.events["TASK_COMPLETED_ACK"],
+                "message": {"id": message["id"]} # only need id to identify
+            },
             "user-%s-%s" %(self.group_names["dp"], self.scope["user"].username)
         )   
         
+    async def list_states(self, message):
+        await self.group_send(
+            {
+                "event": self.events["LIST_STATES_REPLY"],
+                "message": await self.get_all_states(task_id = message["id"])
+            },
+            "user-%s-%s" %(self.group_names["sm"], self.scope["user"].username)
+        )          
 
     async def receive_task(self):
         task = await self.broker.basic_get(queue="high")
@@ -192,11 +202,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             }
             
         await self.group_send(message, self.group_names["dp"])
-
-
-    def on_message(self, channel, method, properties, body):
-        print(body)
-
 
     @transaction.atomic
     @database_sync_to_async
@@ -227,7 +232,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             is greater than 3
             Return False otherwise
         """
-        user_tasks = DeliveryStateTransition.objects.filter(by = self.request.user)
+        user_tasks = DeliveryStateTransition.objects.filter(by = self.scope["user"])
         total_pending_task = user_tasks.filter(
                 state__state = "accepted").values("task").difference(
                     user_tasks.filter(state__state = "completed")).values("task").difference(
@@ -240,6 +245,13 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     def get_task(self, task_id):
         return DeliveryTask.objects.get_object_in_json(task_id)
+
+
+    @database_sync_to_async
+    def get_all_states(self, task_id):
+        qs = DeliveryStateTransition.objects.get_states_in_json(task_id = task_id)
+        return qs
+
 
     async def group_send(self, message, group):
         """
