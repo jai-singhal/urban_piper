@@ -10,12 +10,15 @@ env = environ.Env()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = '6iz%$w^)t=r(e)g=q#$5v0f*2tnhtj$k6&$225$=zn8x=_k@vr'
+SECRET_KEY = env(
+    "DJANGO_SECRET_KEY",
+    default="DobIZIyXgDHlPoneKndwWCmfdbnT7I2LOhR9Tybpo0TFGEdgN9KuJaD6aI8FOKCM",
+)
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
