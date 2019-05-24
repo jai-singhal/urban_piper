@@ -62,7 +62,8 @@ class DeliveryTask(models.Model):
     class Meta:
         verbose_name = _("DeliveryTask")
         verbose_name_plural = _("DeliveryTasks")
-        unique_together = (("title", "created_by"))
+        unique_together = (("title", "created_by"),)
+
     def __str__(self):
         return self.title
 

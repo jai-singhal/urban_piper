@@ -1,4 +1,5 @@
 var taskSocket = new ReconnectingWebSocket('ws://' + window.location.host + '/ws/task/');
+
 function connect() {
     taskSocket.onopen = function open() {
         console.log('WebSockets connection created.');
@@ -154,7 +155,7 @@ function remove_accepted_card(message) {
     if (!$.trim($("#task_accepted_body").html()).length) {
         $("#task_accepted_body").html(`
             <h6 class="text-danger" id = "no_accepted_task">
-                You haven't accepted any Task
+            No pending tasks currently available for you.
             </h6>
         `);
     }

@@ -2,7 +2,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.db import transaction
 import json
-import pika
+import logging
 from urban_piper.core.broker import RabbitMQBroker
 from urban_piper.core.events import events
 from urban_piper.core.models import (
@@ -10,7 +10,6 @@ from urban_piper.core.models import (
     DeliveryTask,
     DeliveryStateTransition
 )
-import logging
 
 
 class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
@@ -62,6 +61,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 await self.list_states(message)
 
         except Exception as e:
+            logging.warning('This will get logged to a file')
             print(e)
 
     # Helping Methods
@@ -80,7 +80,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
         if group_name == "dp":
-            await self.send_task_from_queue(retain = True)
+            await self.send_task_from_queue(retain=True)
         elif group_name == "sm":
             pass
 
@@ -97,8 +97,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                             self.scope["user"].username)
         )
 
-        await self.send_task_from_queue(retain = True)
-
+        await self.send_task_from_queue(retain=True)
 
     async def task_cancelled(self, message):
         """
@@ -119,7 +118,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" % (self.group_names["sm"],
                             self.scope["user"].username)
         )
-        await self.send_task_from_queue(retain = False)
+        await self.send_task_from_queue(retain=False)
 
     async def task_accepted(self, message):
         """
@@ -143,7 +142,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 "event": self.events["TASK_ACCEPTED"],
                 "message": message
             }
-            
+
             # UPDATE THE STATE SM's END
             await self.group_send(
                 {
@@ -152,7 +151,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 },
                 "user-%s-%s" % (self.group_names["sm"], message["created_by"])
             )
-            await self.send_task_from_queue(retain = False)
+            await self.send_task_from_queue(retain=False)
 
         else:
             payload = {
@@ -204,7 +203,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" % (self.group_names["sm"], task["created_by"])
         )
 
-        await self.send_task_from_queue(retain = True)
+        await self.send_task_from_queue(retain=True)
 
     async def task_completed(self, message):
         """
@@ -243,7 +242,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                             self.scope["user"].username)
         )
 
-    async def send_task_from_queue(self, retain = False):
+    async def send_task_from_queue(self, retain=False):
         task = await self.broker.basic_consume(queue="high", auto_ack=True)
         if not task:
             task = await self.broker.basic_consume(queue="medium", auto_ack=True)
@@ -251,7 +250,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 task = await self.broker.basic_consume(queue="low", auto_ack=True)
 
         if task and retain:
-            #new
+            # new
             await self.broker.basic_publish({"task": task["message"]})
             payload = {
                 "event": self.events["NEW_TASK"],
