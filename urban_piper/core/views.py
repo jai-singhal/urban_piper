@@ -26,7 +26,7 @@ class StorageManagerView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = {}
         context["delivery_task_form"] = self.form_class()
-        tasks = DeliveryTask.objects.filter(created_by=self.request.user)
+        tasks = DeliveryTask.objects.filter(created_by=self.request.user).order_by("-creation_at")
         context["tasks"] = []
         for task in tasks:
             context["tasks"].append({
@@ -38,14 +38,12 @@ class StorageManagerView(LoginRequiredMixin, View):
 
         return context
 
-    # @storage_manager_req
     def get(self, *args, **kwargs):
         if not self.request.user.is_storage_manager:
             raise Http404
-        # super(StorageManagerView, self).get(*args, **kwargs)
+
         return render(self.request, self.template_name, self.get_context_data())
 
-    # @storage_manager_req
     def post(self, *args, **kwargs):
         if self.request.method == "POST" and self.request.is_ajax():
             form = self.form_class(self.request.POST)
@@ -93,7 +91,6 @@ class DeliveryPersonView(LoginRequiredMixin, View):
         return context
 
     def get(self, *args, **kwargs):
-        # super(DeliveryPersonView, self).get(*args, **kwargs)
         if not self.request.user.is_delivery_person:
             raise Http404
         return render(self.request, self.template_name, self.get_context_data())

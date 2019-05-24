@@ -73,13 +73,12 @@ class DeliveryStateTransitionManager(models.Manager):
             "state": []
         }
         for transition in self.filter(task_id=task_id).order_by("at"):
-            title = transition.task.title
+            data["title"] = transition.task.title
             data["state"].append(json.loads(json.dumps({
                 "at": transition.at,
                 "state": transition.state.state,
                 "by": transition.by.username if transition.by else None,
             }, cls=DjangoJSONEncoder)))
-        data["title"] = title
 
         return data
 

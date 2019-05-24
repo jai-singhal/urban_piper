@@ -9,4 +9,4 @@ sudo kill $(sudo lsof -t -i:25672)
 sudo rabbitmq-server
 
 
-docker network create -d overlay my_net 1se1glh749q1i4pw0kf26mfx5
+sudo lsof -t -i tcp:8000 | xargs kill -9

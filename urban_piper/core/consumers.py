@@ -10,6 +10,7 @@ from urban_piper.core.models import (
     DeliveryTask,
     DeliveryStateTransition
 )
+import logging
 
 
 class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
@@ -38,27 +39,27 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def receive(self, text_data):
-        response = json.loads(text_data)
-        event = response.get("event", None)
-        # try:
-        message = response.get("message", None)
-        if event == self.events["JOIN"]:
-            await self.join(group_name=message)
-        elif event == self.events["CREATE_TASK"]:
-            await self.create_task(message)
-        elif event == self.events["TASK_CANCELLED"]:
-            await self.task_cancelled(message)
-        elif event == self.events["TASK_ACCEPTED"]:
-            await self.task_accepted(message)
-        elif event == self.events["TASK_COMPLETED"]:
-            await self.task_completed(message)
-        elif event == self.events["TASK_DECLINED"]:
-            await self.task_declined(message)
-        elif event == self.events["LIST_STATES"]:
-            await self.list_states(message)
+        try:
+            response = json.loads(text_data)
+            event = response.get("event", None)
+            message = response.get("message", None)
+            if event == self.events["JOIN"]:
+                await self.join(group_name=message)
+            elif event == self.events["CREATE_TASK"]:
+                await self.create_task(message)
+            elif event == self.events["TASK_CANCELLED"]:
+                await self.task_cancelled(message)
+            elif event == self.events["TASK_ACCEPTED"]:
+                await self.task_accepted(message)
+            elif event == self.events["TASK_COMPLETED"]:
+                await self.task_completed(message)
+            elif event == self.events["TASK_DECLINED"]:
+                await self.task_declined(message)
+            elif event == self.events["LIST_STATES"]:
+                await self.list_states(message)
 
-        # except Exception as e:
-        #     await self.send_json({"error": str(e)})
+        except Exception as e:
+            print(e)
 
     # Helping Methods
 
@@ -106,7 +107,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
         """
         task = await self.get_task(message["id"])
-        await self.broker.basic_consume(task["priority"], True)
+        await self.broker.basic_consume(queue=task["priority"], auto_ack=True)
 
         await self.delete_task(message["id"])
         await self.group_send(
@@ -141,8 +142,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 "event": self.events["TASK_ACCEPTED"],
                 "message": message
             }
-            await self.broker.basic_consume(message["priority"], True)
-
+            await self.broker.basic_consume(queue=message["priority"], auto_ack=True)
             await self.receive_task()
 
             # UPDATE THE STATE SM's END
@@ -174,7 +174,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             2. Remove the task from user-dp dashboard
             3. Enqueue this task to queue
         """
-        print("Task Declined", message["id"])
         await self.create_state(message["id"], state="declined", by=self.scope["user"])
         task = await self.get_task(message["id"])
         await self.broker.basic_publish({"task": task})
@@ -204,7 +203,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             },
             "user-%s-%s" % (self.group_names["sm"], task["created_by"])
         )
-
 
         await self.receive_task()
 
@@ -246,15 +244,13 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def receive_task(self):
-        task = await self.broker.basic_get(queue="high")
+        task = await self.broker.basic_get(queue="high", auto_ack=False)
         if not task:
-            task = await self.broker.basic_get(queue="medium")
+            task = await self.broker.basic_get(queue="medium", auto_ack=False)
             if not task:
-                task = await self.broker.basic_get(queue="low")
+                task = await self.broker.basic_get(queue="low", auto_ack=False)
 
         if task:
-            # reject the message and requeue it
-            await self.broker.basic_reject(int(task["delivery_tag"]), requeue=True)
             message = {
                 "event": self.events["NEW_TASK"],
                 "message": task["message"]
@@ -301,7 +297,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         total_pending_task = 0
         for task in user_tasks:
             if task.states.all().order_by("-deliverystatetransition__at").first().state == "accepted":
-                pending_tasks += 1
+                total_pending_task += 1
 
         if total_pending_task >= 3:
             return True

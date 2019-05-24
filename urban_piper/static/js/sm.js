@@ -117,7 +117,7 @@ function list_states(taskSocket, message) {
 
 function display_new_task(taskSocket, message) {
 
-    $("#sm-tasktable tbody").append(`<tr data-id="${message["task"]["id"]}">
+    $("#sm-tasktable tbody").prepend(`<tr data-id="${message["task"]["id"]}">
         <td class = "title">${message["task"]["title"]}
             <span class="badge badge-primary badge-pill current_state">
                 New

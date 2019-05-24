@@ -127,7 +127,7 @@ function display_accepted_task(taskSocket, message) {
         $("#no_accepted_task").remove();
     }
 
-    $("#task_accepted_body").append(`
+    $("#task_accepted_body").prepend(`
         <div class='card' data-id = ${message["id"]}>
         <div class="card-body" >
             <h5 class="card-title">${message["title"]}</h5>
