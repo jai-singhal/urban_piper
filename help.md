@@ -7,3 +7,6 @@ ps aux | grep epmd
 sudo kill -9 [pid]
 sudo kill $(sudo lsof -t -i:25672)
 sudo rabbitmq-server
+
+
+docker network create -d overlay my_net 1se1glh749q1i4pw0kf26mfx5
