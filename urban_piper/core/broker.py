@@ -5,10 +5,11 @@ from django.conf import settings
 
 class RabbitMQBroker(object):
     def __init__(self):
-        params = pika.URLParameters(settings.AMPQ_URL)
-        params.socket_timeout = 5
+        # params = pika.URLParameters(settings.AMPQ_URL)
+        # params.socket_timeout = 5
 
-        self.CONNECTION = pika.BlockingConnection(params)
+        # self.CONNECTION = pika.BlockingConnection(params)
+        self.CONNECTION = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.CHANNEL = self.CONNECTION.channel()
         self.CHANNEL.queue_declare(queue='high', durable=True)
         self.CHANNEL.queue_declare(queue='medium', durable=True)
@@ -46,3 +47,4 @@ class RabbitMQBroker(object):
 
     def on_message(self, channel, method, properties, body):
         print(body, channel, method)
+
