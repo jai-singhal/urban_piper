@@ -1,0 +1,91 @@
+body{
+    font-family:  "Open Sans", "sans-serif", arial;
+}
+.hero {
+    background-size: cover;
+    background-position: top -80px center;
+    background-repeat: no-repeat;
+    background-color: #fff;
+    height: calc(100vh);
+}
+
+.inner-text {
+    padding-top: 8rem;
+    font-family: "Open Sans", "sans-serif", arial;
+    text-transform: capitalize;
+    text-align: left;
+    color: white;
+}
+
+.heading {
+    font-weight: 600;
+}
+
+.btn-default {
+    font-size: 20px;
+    color: rgba(108, 88, 179, 0.75);
+    letter-spacing: 1px;
+    line-height: 15px;
+    border: 2.5px solid white;
+    border-radius: 40px;
+    background: transparent;
+    transition: all 0.3s ease 0s;
+    padding: 16px;
+    color: white;
+    margin-right: 10px;
+}
+
+.btn-default:hover {
+    color: #FFF;
+    background: rgba(108, 88, 179, 0.75);
+    border: 2.5px solid rgba(108, 89, 179, 0.75);
+}
+
+.navbar-nav {
+    margin-right: 25px;
+}
+
+.navbar {
+    background: rgb(66, 73, 177);
+    background: linear-gradient(90deg, rgba(66, 73, 177, 1) 0%, rgba(105, 80, 189, 1) 35%, rgba(161, 93, 205, 1) 100%);
+}
+
+.navbar-light .navbar-nav .nav-link {
+    font-family: "Open Sans", "sans-serif", arial;
+    color: white !important;
+    font-size: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.badge-pill{
+    padding:8px;
+}
+
+.sm_dashboard {
+    padding-top: 40px;
+}
+
+.list_state {
+    margin-bottom: 4px;
+}
+
+.margin-below {
+    margin-bottom: 12px;
+}
+
+.dp_task_pos {
+    margin-top: 80px;
+}
+
+.dp_acceptedtask_pos {
+    margin-top: 50px;
+}
+
+.dp_btn {
+    margin-left: 5px;
+}
+
+.login{
+    margin-bottom:60px;
+    margin-top:60px;
+}
