@@ -22,6 +22,7 @@ class RabbitMQBroker(object):
 
     async def basic_publish(self, message):
         self.CHANNEL.confirm_delivery()
+        
         ch = self.CHANNEL.basic_publish(exchange='',
                                         routing_key=message["task"]["priority"],
                                         body=json.dumps(
@@ -34,26 +35,24 @@ class RabbitMQBroker(object):
                                         mandatory=True
                                         )
 
-    async def basic_get(self, queue, auto_ack=False):
+    async def basic_consume(self, queue, auto_ack=True):
         try:
-            method, prop, message = self.CHANNEL.basic_get(
-                queue, auto_ack=auto_ack)
-            if message:
-                return {
-                    "message": json.loads(message),
-                    "delivery_tag": method.delivery_tag,
-                }
+            method, header, body = self.CHANNEL.basic_get(
+                queue=queue, auto_ack=auto_ack)
+            if method:
+                if method.NAME == 'Basic.GetEmpty':
+                    return None
+                else:
+                    # self.CHANNEL.basic_ack(delivery_tag=method.delivery_tag)
+                    return {
+                        "message": json.loads(body),
+                        "delivery_tag": method.delivery_tag,
+                    }
         except Exception as e:
-            print(e)
+            self.connect()
         return None
 
-    async def basic_consume(self, queue, auto_ack=True):
-        method, header, body = self.CHANNEL.basic_get(
-            queue=queue, auto_ack=auto_ack)
-        if method:
-            if method.NAME == 'Basic.GetEmpty':
-                return None
-            else:
-                self.CHANNEL.basic_ack(delivery_tag=method.delivery_tag)
-                return body
-        return None
+    async def basic_reject(self, delivery_tag):
+        self.CHANNEL.basic_ack(delivery_tag=delivery_tag)
+        self.CHANNEL.basic_reject(delivery_tag = delivery_tag, requeue=True)
+        self.CHANNEL.basic_recover(requeue=True)

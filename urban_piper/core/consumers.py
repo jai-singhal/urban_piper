@@ -19,6 +19,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         "dp": "delivery_person",
         "sm": "store_manager"
     }
+
     events = events
 
     async def connect(self):
@@ -47,6 +48,8 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 await self.join(group_name=message)
             elif event == self.events["CREATE_TASK"]:
                 await self.create_task(message)
+            elif event == self.events["GET_NEW_TASK"]:
+                await self.send_task_from_queue(retain=True)
             elif event == self.events["TASK_CANCELLED"]:
                 await self.task_cancelled(message)
             elif event == self.events["TASK_ACCEPTED"]:
@@ -64,7 +67,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     # Helping Methods
 
     async def join(self, group_name):
-        print(f"New {group_name} joined with id: {self.channel_name}")
+        # print(f"New {group_name} joined with id: {self.channel_name}")
         await self.channel_layer.group_add(
             self.group_names[group_name],
             self.channel_name,
@@ -77,7 +80,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
         if group_name == "dp":
-            await self.receive_task()
+            await self.send_task_from_queue(retain = True)
         elif group_name == "sm":
             pass
 
@@ -89,22 +92,20 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             {
                 "event": self.events["NEW_TASK"],
                 "message": message
-
             },
             "user-%s-%s" % (self.group_names["sm"],
                             self.scope["user"].username)
         )
 
-        await self.receive_task()
+        await self.send_task_from_queue(retain = True)
+
 
     async def task_cancelled(self, message):
-
         """
         TODO STEPS: 
             1. COnsume the task
             1. DElte the task from the database 
             2. SEnd the ack and delete the task from table
-
         """
         task = await self.get_task(message["id"])
         await self.broker.basic_consume(queue=task["priority"], auto_ack=True)
@@ -118,7 +119,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" % (self.group_names["sm"],
                             self.scope["user"].username)
         )
-        await self.receive_task()
+        await self.send_task_from_queue(retain = False)
 
     async def task_accepted(self, message):
         """
@@ -142,9 +143,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 "event": self.events["TASK_ACCEPTED"],
                 "message": message
             }
-            await self.broker.basic_consume(queue=message["priority"], auto_ack=True)
-            await self.receive_task()
-
+            
             # UPDATE THE STATE SM's END
             await self.group_send(
                 {
@@ -153,6 +152,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 },
                 "user-%s-%s" % (self.group_names["sm"], message["created_by"])
             )
+            await self.send_task_from_queue(retain = False)
 
         else:
             payload = {
@@ -204,7 +204,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             "user-%s-%s" % (self.group_names["sm"], task["created_by"])
         )
 
-        await self.receive_task()
+        await self.send_task_from_queue(retain = True)
 
     async def task_completed(self, message):
         """
@@ -243,25 +243,27 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                             self.scope["user"].username)
         )
 
-    async def receive_task(self):
-        task = await self.broker.basic_get(queue="high", auto_ack=False)
+    async def send_task_from_queue(self, retain = False):
+        task = await self.broker.basic_consume(queue="high", auto_ack=True)
         if not task:
-            task = await self.broker.basic_get(queue="medium", auto_ack=False)
+            task = await self.broker.basic_consume(queue="medium", auto_ack=True)
             if not task:
-                task = await self.broker.basic_get(queue="low", auto_ack=False)
+                task = await self.broker.basic_consume(queue="low", auto_ack=True)
 
-        if task:
-            message = {
+        if task and retain:
+            #new
+            await self.broker.basic_publish({"task": task["message"]})
+            payload = {
                 "event": self.events["NEW_TASK"],
-                "message": task["message"]
+                "message": task["message"],
             }
         else:
-            message = {
+            payload = {
                 "event": self.events["NEW_TASK"],
                 "message": None
             }
 
-        await self.group_send(message, self.group_names["dp"])
+        await self.group_send(payload, self.group_names["dp"])
 
     @transaction.atomic
     @database_sync_to_async
