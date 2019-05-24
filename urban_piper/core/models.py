@@ -42,7 +42,7 @@ class DeliveryTask(models.Model):
         ("medium", "Medium"),
         ("low", "Low")
     )
-    title = models.CharField(max_length=180, unique=True)
+    title = models.CharField(max_length=180)
     priority = models.CharField(
         max_length=10, choices=priority_choice_fields, default="low")
     creation_at = models.DateTimeField(auto_now_add=True)
@@ -62,7 +62,7 @@ class DeliveryTask(models.Model):
     class Meta:
         verbose_name = _("DeliveryTask")
         verbose_name_plural = _("DeliveryTasks")
-
+        unique_together = (("title", "created_by"))
     def __str__(self):
         return self.title
 
