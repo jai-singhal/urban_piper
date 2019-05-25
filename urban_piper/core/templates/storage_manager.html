@@ -15,6 +15,7 @@
                 <thead>
                     <tr>
                         <th>Title</th>
+                        <th>Priority</th>
                         <th>Created at</th>
                         <th></th>
                     </tr>
@@ -28,6 +29,7 @@
                                 {% comment %} by {{task.current_state.by}} {% endcomment %}
                             </span>
                         </td>
+                        <td>{{task.task.priority}}</td>
                         <td>{{task.task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
                         <td><button class="btn btn-secondary btn-sm list_state">List States</button><br>
                             {% ifequal task.current_state.state|stringformat:"s" "new" %}

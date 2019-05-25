@@ -42,7 +42,7 @@ class DeliveryTask(models.Model):
         ("medium", "Medium"),
         ("low", "Low")
     )
-    title = models.CharField(max_length=180)
+    title = models.CharField(max_length=180, db_index = True)
     priority = models.CharField(
         max_length=10, choices=priority_choice_fields, default="low")
     creation_at = models.DateTimeField(auto_now_add=True)
@@ -52,7 +52,8 @@ class DeliveryTask(models.Model):
                                        "is_storage_manager": True,
                                        "is_delivery_person": False,
                                    },
-                                   related_name="created_by_sm"
+                                   related_name="created_by_sm",
+                                   db_index = True
                                    )
     states = models.ManyToManyField(
         DeliveryTaskState, through="DeliveryStateTransition")
@@ -62,7 +63,7 @@ class DeliveryTask(models.Model):
     class Meta:
         verbose_name = _("DeliveryTask")
         verbose_name_plural = _("DeliveryTasks")
-        unique_together = (("title", "created_by"),)
+        unique_together = (("title", "created_by"))
 
     def __str__(self):
         return self.title

@@ -6,7 +6,7 @@ body{
     background-position: top -80px center;
     background-repeat: no-repeat;
     background-color: #fff;
-    height: calc(100vh);
+    height: calc(110vh);
 }
 
 .inner-text {
@@ -18,7 +18,7 @@ body{
 }
 
 .heading {
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .btn-default {

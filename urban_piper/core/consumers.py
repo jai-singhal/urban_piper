@@ -32,21 +32,22 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Leave the rooms: discard the group
-        logging.info(self.scope["user"].username + ": user disconnected.")
-        if self.scope["user"].is_storage_manager:
-            await self.channel_layer.group_discard(
-                "user-%s-%s" % (self.group_names["sm"],
-                                self.scope["user"].username),
-                self.channel_name,
-            )
+        requser = self.scope["user"]
+        if requser.is_authenticated:
+            logging.info(requser.username + ": user disconnected.")
+            if requser.is_storage_manager:
+                await self.channel_layer.group_discard(
+                    "user-%s-%s" % (self.group_names["sm"],
+                                    requser.username),
+                    self.channel_name,
+                )
 
-
-        if self.scope["user"].is_delivery_person:
-            await self.channel_layer.group_discard(
-                "user-%s-%s" % (self.group_names["dp"],
-                                self.scope["user"].username),
-                self.channel_name,
-            )
+            if requser.is_delivery_person:
+                await self.channel_layer.group_discard(
+                    "user-%s-%s" % (self.group_names["dp"],
+                                    requser.username),
+                    self.channel_name,
+                )
 
 
     async def receive(self, text_data):
@@ -286,16 +287,17 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         ANd then send the task(if found) to the delivery person(all), and if not
         found, return null message.
         """
-
-        task = await self.broker.basic_consume(queue="high", auto_ack=True)
+        task = await self.broker.basic_consume(queue="high", auto_ack=False)
         if not task:
-            task = await self.broker.basic_consume(queue="medium", auto_ack=True)
+            task = await self.broker.basic_consume(queue="medium", auto_ack=False)
             if not task:
-                task = await self.broker.basic_consume(queue="low", auto_ack=True)
+                task = await self.broker.basic_consume(queue="low", auto_ack=False)
 
-        if task and retain:
-            # new
-            await self.broker.basic_publish({"task": task["message"]})
+        if task:
+            if retain:
+                await self.broker.basic_nack(delivery_tag=task["delivery_tag"])
+            else:
+                await self.broker.basic_ack(delivery_tag=task["delivery_tag"])
             payload = {
                 "event": self.events["NEW_TASK"],
                 "message": task["message"],

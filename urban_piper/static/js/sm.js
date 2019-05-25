@@ -27,10 +27,10 @@ function connect() {
         let message = data["message"];
         switch (event) {
             case "NEW_TASK":
-                display_new_task(taskSocket, message);
+                display_new_task(message);
                 break;
             case "LIST_STATES_REPLY":
-                display_states(taskSocket, message);
+                display_states(message);
                 break;
             case "UPDATE_STATE":
                 update_state( message);
@@ -86,11 +86,7 @@ $("#task_form").submit(function (e) {
         },
         error: function (response) {
             let errors = response["responseJSON"]["errors"];
-            $.each(errors, function (key, val) {
-                alert(val[1]);
-                console.log(key, val)
-            })
-
+            alert(errors)
             $('#id_title').focus();
         }
     });
@@ -114,7 +110,7 @@ function list_states(taskSocket, message) {
     }));
 }
 
-function display_new_task(taskSocket, message) {
+function display_new_task(message) {
 
     $("#sm-tasktable tbody").prepend(`<tr data-id="${message["task"]["id"]}">
         <td class = "title">${message["task"]["title"]}
@@ -122,6 +118,7 @@ function display_new_task(taskSocket, message) {
                 New
             </span>
         </td>
+        <td>${message["task"]["priority"]}</td>
         <td>${formatDate(new Date(message["task"]["creation_at"]))}</td>
         <td>
         <button class="btn btn-secondary btn-sm list_state">List States</button><br>
@@ -130,7 +127,7 @@ function display_new_task(taskSocket, message) {
     </tr>`)
 }
 
-function display_states(taskSocket, message) {
+function display_states(message) {
     let content = "";
     $("#list_task_title").html(message["title"])
     $.each(message["state"], function (i, item) {

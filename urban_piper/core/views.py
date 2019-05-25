@@ -56,8 +56,17 @@ class StorageManagerView(LoginRequiredMixin, View):
         if self.request.method == "POST" and self.request.is_ajax():
             form = self.form_class(self.request.POST)
             if form.is_valid():
+
+                title = form.cleaned_data['title']
+                created_by = self.request.user
+                if DeliveryTask.objects.filter(title = title, created_by = created_by).exists():
+                    return JsonResponse({
+                        "success": False,
+                        "errors": "Title can't be duplicated"
+                    }, status=400)
+
                 task_instance = form.save(commit=False)
-                task_instance.created_by = self.request.user
+                task_instance.created_by = created_by
                 task_instance.save()
             else:
                 return JsonResponse({

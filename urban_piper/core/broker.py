@@ -20,7 +20,7 @@ class RabbitMQBroker(object):
         self.CHANNEL.queue_declare(queue='low', durable=True)
         self.CHANNEL.basic_qos(prefetch_count=1)
         self.CHANNEL.confirm_delivery()
-
+        
     async def basic_publish(self, message):
         try:
             self.CHANNEL.basic_publish(exchange='',
@@ -37,7 +37,7 @@ class RabbitMQBroker(object):
             logging.error(str(e))
             self.connect()
 
-    async def basic_consume(self, queue, auto_ack=True):
+    async def basic_consume(self, queue, auto_ack=False):
         try:
             method, header, body = self.CHANNEL.basic_get(
                 queue=queue, auto_ack=auto_ack)
@@ -45,7 +45,6 @@ class RabbitMQBroker(object):
                 if method.NAME == 'Basic.GetEmpty':
                     return None
                 else:
-                    # self.CHANNEL.basic_ack(delivery_tag=method.delivery_tag)
                     return {
                         "message": json.loads(body),
                         "delivery_tag": method.delivery_tag,
@@ -54,3 +53,10 @@ class RabbitMQBroker(object):
             logging.error(str(e))
             self.connect()
         return None
+
+    async def basic_ack(self, delivery_tag):
+        self.CHANNEL.basic_ack(delivery_tag=delivery_tag, multiple=False)
+
+    async def basic_nack(self, delivery_tag):
+        self.CHANNEL.basic_nack(delivery_tag=delivery_tag, 
+            multiple=False, requeue=True)
