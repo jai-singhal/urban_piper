@@ -1,6 +1,6 @@
 from .base import *  # noqa
 from .base import env
-
+from .base import APPS_DIR
 DEBUG = False
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
@@ -23,37 +23,28 @@ INSTALLED_APPS += ["gunicorn"]
 
 # LOGGING
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
-    "formatters": {
-        "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s "
-            "%(process)d %(thread)d %(message)s"
-        }
-    },
-    "handlers": {
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": ["require_debug_false"],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
         },
     },
-    "loggers": {
-        "django.request": {
-            "handlers": ["mail_admins"],
-            "level": "ERROR",
-            "propagate": True,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
         },
-        "django.security.DisallowedHost": {
-            "level": "ERROR",
-            "handlers": ["console", "mail_admins"],
-            "propagate": True,
+        'file': {  
+            'class': 'logging.FileHandler',
+            'filename': os.path.normpath(os.path.join(APPS_DIR, '../../logs/django.log')),  
+            'formatter': 'standard'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],  
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
         },
     },
 }
