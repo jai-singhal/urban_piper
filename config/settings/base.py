@@ -131,8 +131,3 @@ MEDIA_URL = "/media/"
 
 
 #ampq settings
-AMPQ_URL = env("AMPQ_URL")
-AMPQ_HOSTNAME = env("AMPQ_HOSTNAME")
-AMPQ_PASSWORD = env("AMPQ_PASSWORD")
-AMPQ_USER = env("AMPQ_USER")
-AMPQ_PORT = env("AMPQ_PORT")

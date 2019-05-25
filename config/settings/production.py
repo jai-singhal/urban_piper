@@ -21,7 +21,6 @@ DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 INSTALLED_APPS += ["gunicorn"]
 
-# LOGGING
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -31,19 +30,19 @@ LOGGING = {
         },
     },
     'handlers': {
-        # 'console': {
-        #     'class': 'logging.StreamHandler',
-        #     'formatter': 'standard',
-        # },
-        'file': {  
-            'class': 'logging.FileHandler',
-            'filename': os.path.normpath(os.path.join(APPS_DIR, '../django.log')),  
-            'formatter': 'standard'
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
         },
+        # 'file': {  
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.path.normpath(os.path.join(APPS_DIR, '../django.log')),  
+        #     'formatter': 'standard'
+        # },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],  
+            'handlers': ['console'],  
             # 'handlers': ['console', 'file'],  
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
         },
