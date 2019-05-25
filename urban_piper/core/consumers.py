@@ -18,7 +18,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         "dp": "delivery_person",
         "sm": "store_manager"
     }
-
     events = events
 
     async def connect(self):
@@ -32,13 +31,29 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             await self.close()
 
     async def disconnect(self, close_code):
-        # Leave the rooms: TODO
-        await self.channel_layer.group_discard(
-            self.group_names["sm"],
-            self.channel_name
-        )
+        # Leave the rooms: discard the group
+        logging.info({self.scope["user"].username} + ": user disconnected.")
+        if self.scope["user"].is_storage_manager:
+            await self.channel_layer.group_discard(
+                "user-%s-%s" % (self.group_names["sm"],
+                                self.scope["user"].username),
+                self.channel_name,
+            )
+
+
+        if self.scope["user"].is_delivery_person:
+            await self.channel_layer.group_discard(
+                "user-%s-%s" % (self.group_names["dp"],
+                                self.scope["user"].username),
+                self.channel_name,
+            )
+
 
     async def receive(self, text_data):
+        """
+        Recieve the request from the client,
+        get the evebt and call the appropriate function
+        """
         try:
             response = json.loads(text_data)
             event = response.get("event", None)
@@ -61,13 +76,17 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 await self.list_states(message)
 
         except Exception as e:
-            logging.warning('This will get logged to a file')
-            print(e)
+            logging.error(str(e))
 
     # Helping Methods
 
     async def join(self, group_name):
-        # print(f"New {group_name} joined with id: {self.channel_name}")
+        """
+        Method to entertain the new connected user,
+        create the group for them(One individual group
+        and other for sm/dp)
+        """
+        logging.info(f"New {group_name} joined with id: {self.channel_name}")
         await self.channel_layer.group_add(
             self.group_names[group_name],
             self.channel_name,
@@ -84,8 +103,17 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         elif group_name == "sm":
             pass
 
+
     async def create_task(self, message):
-        # sending message to sm
+        """
+            Call when new task is created by storage manager,
+            TODO STEPS
+            1. Create new state
+            2. Push the state into queue,
+            3. Send the message to storage manager about the new 
+                created task
+            4. Send the task from the queue, to the Delivery Person
+        """
         await self.create_state(message["task"]["id"], state="new", by=None)
         await self.broker.basic_publish(message)
         await self.group_send(
@@ -99,12 +127,14 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
         await self.send_task_from_queue(retain=True)
 
+
     async def task_cancelled(self, message):
         """
         TODO STEPS: 
             1. COnsume the task
-            1. DElte the task from the database 
-            2. SEnd the ack and delete the task from table
+            2. DElte the task from the database 
+            3. Send the ack and delete the task from table
+            4. Send the new task from the queue to delivery person
         """
         task = await self.get_task(message["id"])
         await self.broker.basic_consume(queue=task["priority"], auto_ack=True)
@@ -169,9 +199,11 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         """
         TODO STEPS: 
             1. Create new state: declined.
-            2. Send this task to all dp-users
-            2. Remove the task from user-dp dashboard
-            3. Enqueue this task to queue
+            2. Enqeuue the task back again in queue
+            3. Remove the task from the delivery person dashboard
+            4. Update the state in the storage manager side,
+            and also alert storage manager about the declined task
+            5. Send the new task from the queue
         """
         await self.create_state(message["id"], state="declined", by=self.scope["user"])
         task = await self.get_task(message["id"])
@@ -210,6 +242,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         TODO STEPS: 
             1. Create new state: Completed.
             2. Remove the task from user-dp dashboard
+            3. Send the ack about the update state
         """
         await self.create_state(message["id"], state="completed", by=self.scope["user"])
 
@@ -233,6 +266,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def list_states(self, message):
+        """
+        Get all the state of the task to storage manager
+        """
         await self.group_send(
             {
                 "event": self.events["LIST_STATES_REPLY"],
@@ -243,6 +279,14 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def send_task_from_queue(self, retain=False):
+        """
+        Consume the task from the queue, prioritized by high, medium, and low,
+        i.e., take the task from highest queue first,
+        If want to retain the task, publish the task back again in the queue
+        ANd then send the task(if found) to the delivery person(all), and if not
+        found, return null message.
+        """
+
         task = await self.broker.basic_consume(queue="high", auto_ack=True)
         if not task:
             task = await self.broker.basic_consume(queue="medium", auto_ack=True)
@@ -264,9 +308,14 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
         await self.group_send(payload, self.group_names["dp"])
 
+
+    # Database handler methods
     @transaction.atomic
     @database_sync_to_async
     def create_state(self, task_id, state, by=None):
+        """
+        Create a new state and a new transition in db
+        """
         try:
             state_instance = DeliveryTaskState.objects.get(state=state)
             task_instance = DeliveryTask.objects.get(id=task_id)
@@ -281,7 +330,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             task_instance.save()
             return True
         except Exception as e:
-            print(e)
+            logging.error(str(e))
             return False
 
     @transaction.atomic
@@ -307,16 +356,19 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def get_task(self, task_id):
+        # get the task in the form of json
         return DeliveryTask.objects.get_object_in_json(task_id)
 
     @database_sync_to_async
     def get_all_states(self, task_id):
+        # get all the task transitions of a given task
         qs = DeliveryStateTransition.objects.get_states_in_json(
             task_id=task_id)
         return qs
 
     @database_sync_to_async
     def delete_task(self, task_id):
+        # delete the task
         DeliveryTask.objects.get(id=task_id).delete()
 
     async def group_send(self, message, group):

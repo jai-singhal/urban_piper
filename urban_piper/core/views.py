@@ -26,6 +26,10 @@ class StorageManagerView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = {}
         context["delivery_task_form"] = self.form_class()
+        """
+            Get all the task created by Storage manager, along with the 
+            last  known state
+        """
         tasks = DeliveryTask.objects.filter(
             created_by=self.request.user).order_by("-creation_at")
         context["tasks"] = []
@@ -46,6 +50,9 @@ class StorageManagerView(LoginRequiredMixin, View):
         return render(self.request, self.template_name, self.get_context_data())
 
     def post(self, *args, **kwargs):
+        """
+        Save the task by ajax post request
+        """
         if self.request.method == "POST" and self.request.is_ajax():
             form = self.form_class(self.request.POST)
             if form.is_valid():
@@ -67,7 +74,7 @@ class StorageManagerView(LoginRequiredMixin, View):
                     "creation_at": task_instance.creation_at,
                     "created_by": task_instance.created_by.username,
                 }
-            }, status=200
+                }, status=200
             )
         return JsonResponse({"success": False}, status=400)
 
@@ -79,10 +86,14 @@ class DeliveryPersonView(LoginRequiredMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
+        """
+        Pending tasks for a delivery person =
+            If the user's last transitition state is accepted then,
+            it is called as Pending task for the user
+        """
         user_tasks = DeliveryTask.objects.filter(
             states__deliverystatetransition__by=self.request.user).distinct()
         context["pending_tasks"] = []
-
         for task in user_tasks:
             if task.states.all().order_by(
                 "-deliverystatetransition__at"
@@ -95,3 +106,5 @@ class DeliveryPersonView(LoginRequiredMixin, View):
         if not self.request.user.is_delivery_person:
             raise Http404
         return render(self.request, self.template_name, self.get_context_data())
+
+

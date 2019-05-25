@@ -15,7 +15,6 @@ function connect() {
 
     taskSocket.onclose = function (e) {
         console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-        taskSocket = new WebSocket('ws://' + window.location.host + '/ws/task/');
         setTimeout(function () {
             connect();
         }, 1000);

@@ -1,4 +1,5 @@
 var taskSocket = new ReconnectingWebSocket('ws://' + window.location.host + '/ws/task/');
+
 function connect() {
     taskSocket.onopen = function open() {
         console.log('WebSockets connection created.');
@@ -64,38 +65,15 @@ $(document).on('click', ".task_declined", function () {
 });
 
 
-
-
-function task_accepted(taskSocket, message) {
-    taskSocket.send(JSON.stringify({
-        "event": "TASK_ACCEPTED",
-        "message": message
-    }));
-}
-
-function task_completed(taskSocket, message) {
-    taskSocket.send(JSON.stringify({
-        "event": "TASK_COMPLETED",
-        "message": message
-    }));
-}
-
-
-function task_declined(taskSocket, message) {
-    taskSocket.send(JSON.stringify({
-        "event": "TASK_DECLINED",
-        "message": message
-    }));
-}
-
-
 function display_new_task(taskSocket, message) {
     let html_content;
     if (message) {
-        html_content = `<div class = 'card'>
-            <div class = "card-header">
+        html_content = `
+        <div class="card" id="new_task">
+            <div class="card-header">
                 <p>New Task Recieved:
-                        Priority: <span class = "text-danger"> ${message["priority"]}</span>
+                        Priority: <span value = ${message["priority_value"]}
+                        class = "text-danger priority"> ${message["priority"]}</span>
                 </p>
             </div>
             <div class = "card-body">
@@ -121,6 +99,33 @@ function display_new_task(taskSocket, message) {
         task_accepted(taskSocket, message);
     })
 }
+
+function task_accepted(taskSocket, message) {
+    taskSocket.send(JSON.stringify({
+        "event": "TASK_ACCEPTED",
+        "message": message
+    }));
+    taskSocket.send(JSON.stringify({
+        "event": "GET_NEW_TASK",
+        "message": message
+    }));
+}
+
+function task_completed(taskSocket, message) {
+    taskSocket.send(JSON.stringify({
+        "event": "TASK_COMPLETED",
+        "message": message
+    }));
+}
+
+
+function task_declined(taskSocket, message) {
+    taskSocket.send(JSON.stringify({
+        "event": "TASK_DECLINED",
+        "message": message
+    }));
+}
+
 
 function display_accepted_task(taskSocket, message) {
     if ($("#no_accepted_task").length) {
@@ -150,7 +155,7 @@ function remove_accepted_card(message) {
     if (!$.trim($("#task_accepted_body").html()).length) {
         $("#task_accepted_body").html(`
             <h6 class="text-danger" id = "no_accepted_task">
-                You haven't accepted any Task
+            No pending tasks currently available for you.
             </h6>
         `);
     }

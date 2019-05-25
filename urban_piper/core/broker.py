@@ -35,6 +35,7 @@ class RabbitMQBroker(object):
                                        )
         except Exception as e:
             #reconnect
+            logging.error(str(e))
             self.connect()
 
     async def basic_consume(self, queue, auto_ack=True):
@@ -51,5 +52,6 @@ class RabbitMQBroker(object):
                         "delivery_tag": method.delivery_tag,
                     }
         except Exception as e:
+            logging.error(str(e))
             self.connect()
         return None

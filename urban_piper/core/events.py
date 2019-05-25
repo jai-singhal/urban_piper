@@ -1,3 +1,7 @@
+"""
+List of allt the events used
+"""
+
 events = {
     "CREATE_TASK": "CREATE_TASK",
     "JOIN": "JOIN",
