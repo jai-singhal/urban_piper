@@ -19,11 +19,10 @@ class RabbitMQBroker(object):
         self.CHANNEL.queue_declare(queue='medium', durable=True)
         self.CHANNEL.queue_declare(queue='low', durable=True)
         self.CHANNEL.basic_qos(prefetch_count=1)
+        self.CHANNEL.confirm_delivery()
 
     async def basic_publish(self, message):
         try:
-            self.CHANNEL.confirm_delivery()
-
             self.CHANNEL.basic_publish(exchange='',
                                        routing_key=message["task"]["priority"],
                                        body=json.dumps(message["task"]),

@@ -32,7 +32,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Leave the rooms: discard the group
-        logging.info({self.scope["user"].username} + ": user disconnected.")
+        logging.info(self.scope["user"].username + ": user disconnected.")
         if self.scope["user"].is_storage_manager:
             await self.channel_layer.group_discard(
                 "user-%s-%s" % (self.group_names["sm"],
