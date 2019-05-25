@@ -118,7 +118,7 @@ celerybeat-schedule
 .env
 .envs
 
-
+*.sql
 # virtualenv
 .venv
 .vnv
