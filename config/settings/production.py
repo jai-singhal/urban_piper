@@ -31,19 +31,20 @@ LOGGING = {
         },
     },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'standard',
-        },
+        # 'console': {
+        #     'class': 'logging.StreamHandler',
+        #     'formatter': 'standard',
+        # },
         'file': {  
             'class': 'logging.FileHandler',
-            'filename': os.path.normpath(os.path.join(APPS_DIR, '../../logs/django.log')),  
+            'filename': os.path.normpath(os.path.join(APPS_DIR, '../django.log')),  
             'formatter': 'standard'
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],  
+            'handlers': ['file'],  
+            # 'handlers': ['console', 'file'],  
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
         },
     },
