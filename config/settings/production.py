@@ -34,17 +34,17 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
         },
-        # 'file': {  
-        #     'class': 'logging.FileHandler',
-        #     'filename': os.path.normpath(os.path.join(APPS_DIR, '../django.log')),  
-        #     'formatter': 'standard'
-        # },
+        'file': {  
+            'class': 'logging.FileHandler',
+            'filename': os.path.normpath(os.path.join(APPS_DIR, '../django.log')),  
+            'formatter': 'standard'
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],  
-            # 'handlers': ['console', 'file'],  
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
+            # 'handlers': ['console'],  
+            'handlers': [ 'file'],  
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING'), 
         },
     },
 }
