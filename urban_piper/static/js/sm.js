@@ -132,8 +132,8 @@ function display_states(message) {
     $("#list_task_title").html(message["title"])
     $.each(message["state"], function (i, item) {
         content += `
-        ${ ((i == 0 || i%3 == 0) && "<div class = 'row margin-below'>") || "" }
-        <div class = 'col-4'>
+        ${ ((i == 0 || i%4 == 0) && "<div class = 'row margin-below'>") || "" }
+        <div class = 'col-sm-12 col-md-6 col-lg-3'>
             <div class = 'card'>
                 <div class = "card-header">
                     State - ${i+1}
@@ -149,7 +149,7 @@ function display_states(message) {
                 </div>
             </div>
         </div>
-        ${ ((i != 0 && (i+1)%3 == 0) && "</div>") || "" }
+        ${ ((i != 0 && (i+1)%4 == 0) && "</div>") || "" }
         `;
     })
     content += "</div>";
