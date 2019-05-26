@@ -59,7 +59,7 @@ class StorageManagerView(LoginRequiredMixin, View):
 
                 title = form.cleaned_data['title']
                 created_by = self.request.user
-                if DeliveryTask.objects.filter(title = title, created_by = created_by).exists():
+                if DeliveryTask.objects.filter(title=title, created_by=created_by).exists():
                     return JsonResponse({
                         "success": False,
                         "errors": "Title can't be duplicated"
@@ -83,7 +83,7 @@ class StorageManagerView(LoginRequiredMixin, View):
                     "creation_at": task_instance.creation_at,
                     "created_by": task_instance.created_by.username,
                 }
-                }, status=200
+            }, status=200
             )
         return JsonResponse({"success": False}, status=400)
 
@@ -115,5 +115,3 @@ class DeliveryPersonView(LoginRequiredMixin, View):
         if not self.request.user.is_delivery_person:
             raise Http404
         return render(self.request, self.template_name, self.get_context_data())
-
-

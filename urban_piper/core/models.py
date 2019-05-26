@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext as _
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from urban_piper.users.models import User
 import json
 
@@ -14,7 +16,10 @@ class DeliveryTaskState(models.Model):
         ("cancelled", "Cancelled"),
     )
     state = models.CharField(choices=state_choices,
-                             default="new", max_length=12, db_index=True)
+                             default="new", max_length=12,
+                             db_index=True,
+                             unique=True
+                             )
 
     def __str__(self):
         return "%s" % (self.state)
@@ -42,7 +47,7 @@ class DeliveryTask(models.Model):
         ("medium", "Medium"),
         ("low", "Low")
     )
-    title = models.CharField(max_length=180, db_index = True)
+    title = models.CharField(max_length=180, db_index=True)
     priority = models.CharField(
         max_length=10, choices=priority_choice_fields, default="low")
     creation_at = models.DateTimeField(auto_now_add=True)
@@ -53,7 +58,7 @@ class DeliveryTask(models.Model):
                                        "is_delivery_person": False,
                                    },
                                    related_name="created_by_sm",
-                                   db_index = True
+                                   db_index=True
                                    )
     states = models.ManyToManyField(
         DeliveryTaskState, through="DeliveryStateTransition")

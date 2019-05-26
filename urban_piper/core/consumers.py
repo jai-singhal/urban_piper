@@ -49,7 +49,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                     self.channel_name,
                 )
 
-
     async def receive(self, text_data):
         """
         Recieve the request from the client,
@@ -104,7 +103,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         elif group_name == "sm":
             pass
 
-
     async def create_task(self, message):
         """
             Call when new task is created by storage manager,
@@ -115,7 +113,8 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                 created task
             4. Send the task from the queue, to the Delivery Person
         """
-        await self.create_state(message["task"]["id"], state="new", by=None)
+        await self.create_state(message["task"]["id"], state="new", by=self.scope["user"])
+
         await self.broker.basic_publish(message)
         await self.group_send(
             {
@@ -127,7 +126,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         )
 
         await self.send_task_from_queue(retain=True)
-
 
     async def task_cancelled(self, message):
         """
@@ -167,8 +165,13 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         """
         total_pending_state = self.check_total_pending_tasks(
             user=self.scope["user"])
+
         if not total_pending_state:
-            await self.create_state(message["id"], state="accepted", by=self.scope["user"])
+
+            res = await self.create_state(message["id"], state="accepted", by=self.scope["user"])
+            if not res:
+                return
+
             payload = {
                 "event": self.events["TASK_ACCEPTED"],
                 "message": message
@@ -206,7 +209,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             and also alert storage manager about the declined task
             5. Send the new task from the queue
         """
-        await self.create_state(message["id"], state="declined", by=self.scope["user"])
+        res = await self.create_state(message["id"], state="declined", by=self.scope["user"])
+        if not res:
+            return
         task = await self.get_task(message["id"])
         await self.broker.basic_publish({"task": task})
 
@@ -245,8 +250,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             2. Remove the task from user-dp dashboard
             3. Send the ack about the update state
         """
-        await self.create_state(message["id"], state="completed", by=self.scope["user"])
-
+        res = await self.create_state(message["id"], state="completed", by=self.scope["user"])
+        if not res:
+            return
         await self.group_send(
             {
                 "event": self.events["TASK_COMPLETED_ACK"],
@@ -310,7 +316,6 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
         await self.group_send(payload, self.group_names["dp"])
 
-
     # Database handler methods
     @transaction.atomic
     @database_sync_to_async
@@ -320,17 +325,29 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         """
         try:
             state_instance = DeliveryTaskState.objects.get(state=state)
+
+            # consitency check for double click on button
+            last_transaction_state = DeliveryStateTransition.objects.filter(
+                task_id=task_id,
+                by=by
+            ).order_by("-at").first()
+            if last_transaction_state and last_transaction_state.state_id == state_instance.id:
+                return False
+
+            # save the instance of the transaction
             task_instance = DeliveryTask.objects.get(id=task_id)
+
             transition_instance = DeliveryStateTransition(
                 task_id=task_instance.id,
                 state_id=state_instance.id,
                 by=by
             )
             transition_instance.save()
-
             task_instance.states.add(state_instance)
             task_instance.save()
+
             return True
+
         except Exception as e:
             logging.error(str(e))
             return False
