@@ -14,27 +14,27 @@
 
 ## How to run the project locally
 
-For running the project locally, we are going to use rabbitmq locally, and also database
-as dbsqlite3 
+For running the project locally, we are going to use rabbitmq locally, and also
+database as dbsqlite3 
 
 1. Install the python(3.6.8), rabbitmq, and redis
 
     #### Rabbitmq: 
 
     `
-        sudo apt-get install -y erlang
+        $ sudo apt-get install -y erlang
     `
 
     `
-        sudo apt-get install rabbitmq-server
+        $ sudo apt-get install rabbitmq-server
     `
 
     `
-        sudo systemctl enable rabbitmq-server
+        $ sudo systemctl enable rabbitmq-server
     `
 
     `
-        sudo systemctl start rabbitmq-server
+        $ sudo systemctl start rabbitmq-server
     `
 
     #### Redis:
@@ -42,7 +42,7 @@ as dbsqlite3
     Assuming docker already installed.
 
     `
-    docker run -p 6379:6379 -d redis:2.8
+        $ docker run -p 6379:6379 -d redis:2.8
     `
 
 
@@ -53,7 +53,7 @@ as dbsqlite3
 4. create virtualenv by
  
     `
-        $ virtualenv - python3 venv
+        $ virtualenv -p python3 venv
     `
 
     And then activate it by
@@ -71,19 +71,19 @@ as dbsqlite3
 6. Migrate the database. Run
 
     `
-        python3 manage.py migrate
+        $ python3 manage.py migrate
     `
 
 7. Load the users data from dumped data
 
     `
-        python3 manage.py loaddata dbdata.json
+        $ python3 manage.py loaddata dbdata.json
     `
 
 8. Run the server
 
     `
-        python3 manage.py runserver
+        $ python3 manage.py runserver
     `
 
 9. Navigate to http://127.0.0.1:8000 and then login either by Storage Manager, or
