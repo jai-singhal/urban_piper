@@ -9,4 +9,6 @@ sudo kill $(sudo lsof -t -i:25672)
 sudo rabbitmq-server
 
 
-sudo lsof -t -i tcp:8000 | xargs kill -9
+sudo lsof -t -i tcp:80 | xargs kill -9
+
+python3 manage.py runserver 0.0.0.0:80 &

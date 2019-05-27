@@ -136,7 +136,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             4. Send the new task from the queue to delivery person
         """
         task = await self.get_task(message["id"])
-        await self.broker.basic_consume(queue=task["priority"], auto_ack=True)
+        await self.broker.basic_get(queue=task["priority"], auto_ack=True)
 
         await self.delete_task(message["id"])
         await self.group_send(
@@ -293,11 +293,11 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         ANd then send the task(if found) to the delivery person(all), and if not
         found, return null message.
         """
-        task = await self.broker.basic_consume(queue="high", auto_ack=False)
+        task = await self.broker.basic_get(queue="high", auto_ack=False)
         if not task:
-            task = await self.broker.basic_consume(queue="medium", auto_ack=False)
+            task = await self.broker.basic_get(queue="medium", auto_ack=False)
             if not task:
-                task = await self.broker.basic_consume(queue="low", auto_ack=False)
+                task = await self.broker.basic_get(queue="low", auto_ack=False)
 
         if task:
             if retain:

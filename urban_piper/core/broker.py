@@ -37,7 +37,7 @@ class RabbitMQBroker(object):
             logging.error(str(e))
             self.connect()
 
-    async def basic_consume(self, queue, auto_ack=False):
+    async def basic_get(self, queue, auto_ack=False):
         try:
             method, header, body = self.CHANNEL.basic_get(
                 queue=queue, auto_ack=auto_ack)
