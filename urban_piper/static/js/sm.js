@@ -177,5 +177,4 @@ function task_declined(message){
 
       </div>`
     ).fadeIn(500);
-
 }

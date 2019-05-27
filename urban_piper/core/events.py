@@ -1,5 +1,5 @@
 """
-List of allt the events used
+List of all the events used
 """
 
 events = {
