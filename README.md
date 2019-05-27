@@ -19,31 +19,31 @@ as dbsqlite3
 
 1. Install the python(3.6.8), rabbitmq, and redis
 
-#### Rabbitmq: 
+    #### Rabbitmq: 
 
-`
-    sudo apt-get install -y erlang
-`
+    `
+        sudo apt-get install -y erlang
+    `
 
-`
-    sudo apt-get install rabbitmq-server
-`
+    `
+        sudo apt-get install rabbitmq-server
+    `
 
-`
-    sudo systemctl enable rabbitmq-server
-`
+    `
+        sudo systemctl enable rabbitmq-server
+    `
 
-`
-    sudo systemctl start rabbitmq-server
-`
+    `
+        sudo systemctl start rabbitmq-server
+    `
 
-#### Redis:
+    #### Redis:
 
-Assuming docker already installed.
+    Assuming docker already installed.
 
-`
-docker run -p 6379:6379 -d redis:2.8
-`
+    `
+    docker run -p 6379:6379 -d redis:2.8
+    `
 
 
 2. Clone the repository from https://gitlab.com/jai-singhal/urban_piper
@@ -52,39 +52,39 @@ docker run -p 6379:6379 -d redis:2.8
 
 4. create virtualenv by
  
- `
-    $ virtualenv - python3 venv
- `
+    `
+        $ virtualenv - python3 venv
+    `
 
- And then activate it by
+    And then activate it by
 
- `
-    $ source venv/bin/activate
- `
+    `
+        $ source venv/bin/activate
+    `
 
 5. Install the dependencies by
 
-`
-    $ pip3 install -r requirements.txt 
-`
+    `
+        $ pip3 install -r requirements.txt 
+    `
 
 6. Migrate the database. Run
 
-`
-    python3 manage.py migrate
-`
+    `
+        python3 manage.py migrate
+    `
 
 7. Load the users data from dumped data
 
-`
-    python3 manage.py loaddata dbdata.json
-`
+    `
+        python3 manage.py loaddata dbdata.json
+    `
 
 8. Run the server
 
-`
-    python3 manage.py runserver
-`
+    `
+        python3 manage.py runserver
+    `
 
 9. Navigate to http://127.0.0.1:8000 and then login either by Storage Manager, or
 Delivery Person. Login Credentials are mentioned in the login page.
