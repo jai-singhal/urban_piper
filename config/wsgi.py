@@ -15,7 +15,7 @@ env = environ.Env()
 # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 os.environ['DJANGO_SETTINGS_MODULE'] = env(
     "DJANGO_SETTINGS_MODULE",
-    default="config.settings.production",
+    default="config.settings.local",
 )
 
 application = get_wsgi_application()

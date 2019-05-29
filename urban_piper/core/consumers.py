@@ -163,11 +163,10 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
                     - Send a signal to current dp user about exceeding
                      the more than 3 pending state
         """
-        total_pending_state = self.check_total_pending_tasks(
+        total_pending_state = await self.check_total_pending_tasks(
             user=self.scope["user"])
 
         if not total_pending_state:
-
             res = await self.create_state(message["id"], state="accepted", by=self.scope["user"])
             if not res:
                 return
@@ -353,6 +352,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
             return False
 
     @transaction.atomic
+    @database_sync_to_async
     def check_total_pending_tasks(self, user):
         """
             Returns True if no. of states of dp user which 
