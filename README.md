@@ -35,7 +35,7 @@ database as dbsqlite3
     `
         $ sudo systemctl start rabbitmq-server
     `
-2. Clone the repository from https://gitlab.com/jai-singhal/urban_piper
+2. Clone the repository from https://github.com/jai-singhal/urban_piper
 
 3. Unzip it, and cd to it
 
@@ -80,5 +80,3 @@ Delivery Person. Login Credentials are mentioned in the login page.
 
 10. Open the application in several Browser windows. Use Incognito mode for login by 
 different users.
-
-Note: For more queries. Feel free to ask at **jaisinghal48[at]gmail[dot]com**
