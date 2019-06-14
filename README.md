@@ -16,7 +16,7 @@
 For running the project locally, we are going to use rabbitmq locally, and also
 database as dbsqlite3 
 
-1. Install the python(3.6.8), rabbitmq, and redis
+1. Install the python(>=3.6) and rabbitmq
 
     #### Rabbitmq: 
 
