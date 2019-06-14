@@ -6,7 +6,6 @@
 - Pika==1.0.1
 - Rabbitmq
 - Django Channels
-- Redis
 - Postgresql
 - DigitalOcean(For Deployement)
 - jquery/javascript
@@ -36,16 +35,6 @@ database as dbsqlite3
     `
         $ sudo systemctl start rabbitmq-server
     `
-
-    #### Redis:
-
-    Assuming docker already installed.
-
-    `
-        $ docker run -p 6379:6379 -d redis:2.8
-    `
-
-
 2. Clone the repository from https://gitlab.com/jai-singhal/urban_piper
 
 3. Unzip it, and cd to it

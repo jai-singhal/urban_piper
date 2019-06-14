@@ -74,14 +74,27 @@ TEMPLATES = [
 ASGI_APPLICATION = "config.routing.application"
 
 # REDIS SETTINGS
+## redis backend
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+# rabbitmq backend
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+    "default": {
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "CONFIG": {
+            # if having any amqp server url use that url
+            "host": env("AMQP_URL", default = "amqp://guest:guest@localhost:5672")
+            # "ssl_context": ... (optional)
         },
     },
 }
+
 
 AUTH_USER_MODEL = "users.User"
 
@@ -131,3 +144,4 @@ MEDIA_URL = "/media/"
 
 
 #ampq settings
+AMQP_URL = env("AMQP_URL", default="localhost")

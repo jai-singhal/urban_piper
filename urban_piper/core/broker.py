@@ -6,21 +6,27 @@ import logging
 
 class RabbitMQBroker(object):
     def __init__(self):
-        # params = pika.URLParameters(settings.AMPQ_URL)
-        # self.CONNECTION = pika.BlockingConnection(params)
+
         self.connect()
 
     def connect(self):
-        self.CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters('localhost')
-        )
+        AMQP_URL = settings.AMQP_URL
+        # use cloudamqp url(if have) or use local amqp url.
+        if AMQP_URL != "localhost":
+            params = pika.URLParameters(AMQP_URL)
+            self.CONNECTION = pika.BlockingConnection(params)
+        else:
+            self.CONNECTION = pika.BlockingConnection(
+                pika.ConnectionParameters('localhost')
+            )
+
         self.CHANNEL = self.CONNECTION.channel()
         self.CHANNEL.queue_declare(queue='high', durable=True)
         self.CHANNEL.queue_declare(queue='medium', durable=True)
         self.CHANNEL.queue_declare(queue='low', durable=True)
         self.CHANNEL.basic_qos(prefetch_count=1)
         self.CHANNEL.confirm_delivery()
-        
+
     async def basic_publish(self, message):
         try:
             self.CHANNEL.basic_publish(exchange='',
@@ -33,7 +39,7 @@ class RabbitMQBroker(object):
                                        mandatory=True
                                        )
         except Exception as e:
-            #reconnect
+            # reconnect
             logging.error(str(e))
             self.connect()
 
@@ -58,5 +64,5 @@ class RabbitMQBroker(object):
         self.CHANNEL.basic_ack(delivery_tag=delivery_tag, multiple=False)
 
     async def basic_nack(self, delivery_tag):
-        self.CHANNEL.basic_nack(delivery_tag=delivery_tag, 
-            multiple=False, requeue=True)
+        self.CHANNEL.basic_nack(delivery_tag=delivery_tag,
+                                multiple=False, requeue=True)
