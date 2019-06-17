@@ -1,5 +1,8 @@
 # A Scalable Delivery task processing system
 
+
+[![Sample Video](https://github.com/jai-singhal/avyukt/blob/master/sample.gif)](https://github.com/jai-singhal/avyukt/blob/master/sample.gif)
+
 ## Technologies used
 - Python==3.6.8
 - Django==2.2.1
