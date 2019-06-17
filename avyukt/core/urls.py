@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from urban_piper.core import views
+from avyukt.core import views
 
 urlpatterns = [
     path('', views.index, name="index"),

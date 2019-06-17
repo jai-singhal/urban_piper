@@ -3,9 +3,9 @@ from channels.db import database_sync_to_async
 from django.db import transaction
 import json
 import logging
-from urban_piper.core.broker import RabbitMQBroker
-from urban_piper.core.events import events
-from urban_piper.core.models import (
+from avyukt.core.broker import RabbitMQBroker
+from avyukt.core.events import events
+from avyukt.core.models import (
     DeliveryTaskState,
     DeliveryTask,
     DeliveryStateTransition

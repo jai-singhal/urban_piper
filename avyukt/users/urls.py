@@ -1,7 +1,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from urban_piper.users import views
+from avyukt.users import views
 
 urlpatterns = [
     path('login/', views.login_view, name="login"),

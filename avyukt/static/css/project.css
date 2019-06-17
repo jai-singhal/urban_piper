@@ -5,7 +5,6 @@ body{
     background-size: cover;
     background-position: top -80px center;
     background-repeat: no-repeat;
-    background-color: #fff;
     height: calc(110vh);
 }
 
@@ -26,18 +25,18 @@ body{
     color: rgba(108, 88, 179, 0.75);
     letter-spacing: 1px;
     line-height: 15px;
-    border: 2.5px solid white;
+    border: 2.5px solid rgb(50, 52, 128);
     border-radius: 40px;
     background: transparent;
     transition: all 0.3s ease 0s;
     padding: 16px;
-    color: white;
+    color: rgb(80, 57, 160);
     margin-right: 10px;
 }
 
 .btn-default:hover {
     color: #FFF;
-    background: rgba(108, 88, 179, 0.75);
+    background: rgba(64, 29, 192, 0.75);
     border: 2.5px solid rgba(108, 89, 179, 0.75);
 }
 

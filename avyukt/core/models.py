@@ -3,7 +3,7 @@ from django.utils.translation import gettext as _
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from urban_piper.users.models import User
+from avyukt.users.models import User
 import json
 
 

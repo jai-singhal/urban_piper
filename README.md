@@ -1,4 +1,4 @@
-# Urban Piper Product Developer-Python Hiring Challenge
+# A Scalable Delivery task processing system
 
 ## Technologies used
 - Python==3.6.8
@@ -35,7 +35,7 @@ database as dbsqlite3
     `
         $ sudo systemctl start rabbitmq-server
     `
-2. Clone the repository from https://github.com/jai-singhal/urban_piper
+2. Clone the repository from https://github.com/jai-singhal/avyukt
 
 3. Unzip it, and cd to it
 

@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from urban_piper.core.models import DeliveryTask
+from avyukt.core.models import DeliveryTask
 
 
 class DeliveryTaskForm(ModelForm):

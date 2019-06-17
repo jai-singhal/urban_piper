@@ -3,8 +3,8 @@ import environ
 
 ROOT_DIR = (
     environ.Path(__file__) - 3
-)  # (urban_piper/config/settings/base.py - 3 = urban_piper/)
-APPS_DIR = ROOT_DIR.path("urban_piper")
+)  # (avyukt/config/settings/base.py - 3 = avyukt/)
+APPS_DIR = ROOT_DIR.path("avyukt")
 env = environ.Env()
 
 
@@ -33,8 +33,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "urban_piper.core",
-    "urban_piper.users",
+    "avyukt.core",
+    "avyukt.users",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -120,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# AUTHENTICATION_BACKENDS = ["urban_piper.users.backend.AuthenticationBackend"]
+# AUTHENTICATION_BACKENDS = ["avyukt.users.backend.AuthenticationBackend"]
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE =  'Asia/Kolkata'

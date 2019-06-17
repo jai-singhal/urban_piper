@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.contrib import messages
-from urban_piper.users.forms import UsersLoginForm
+from avyukt.users.forms import UsersLoginForm
 
 
 def login_view(request):

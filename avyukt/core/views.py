@@ -4,8 +4,8 @@ from django.utils.safestring import mark_safe
 from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.views import View
-from urban_piper.core.forms import DeliveryTaskForm
-from urban_piper.core.models import (
+from avyukt.core.forms import DeliveryTaskForm
+from avyukt.core.models import (
     DeliveryTask,
     DeliveryTaskState,
     DeliveryStateTransition
