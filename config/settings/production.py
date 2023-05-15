@@ -2,11 +2,11 @@ from .base import *  # noqa
 from .base import env
 from .base import APPS_DIR
 DEBUG = False
+print("Production settings")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["https://urbanpiper.com"])
 ALLOWED_HOSTS = ["*"]
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', 

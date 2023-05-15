@@ -1,8 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils.safestring import mark_safe
 from django.http import JsonResponse, Http404
-from django.contrib import messages
 from django.views import View
 from avyukt.core.forms import DeliveryTaskForm
 from avyukt.core.models import (
@@ -11,9 +9,11 @@ from avyukt.core.models import (
     DeliveryStateTransition
 )
 
-
 def index(request):
     return render(request, 'index.html', {})
+
+from django.db.models.functions import FirstValue
+from django.db.models import F,  Window
 
 
 class StorageManagerView(LoginRequiredMixin, View):
@@ -28,20 +28,18 @@ class StorageManagerView(LoginRequiredMixin, View):
         context["delivery_task_form"] = self.form_class()
         """
             Get all the task created by Storage manager, along with the 
-            last  known state
+            last known state
         """
-        tasks = DeliveryTask.objects.filter(
-            created_by=self.request.user).order_by("-creation_at")
-        context["tasks"] = []
-        for task in tasks:
-            context["tasks"].append({
-                "current_state": DeliveryStateTransition.objects.filter(
-                                    task=task
-                                    ).order_by("-at").first(),
-                "task": task
-            })
 
+        window = {
+            'order_by':  F('at').desc()
+        }
+
+        context["tasks"] = DeliveryStateTransition.objects.prefetch_related("task").filter(task__created_by = self.request.user).annotate(
+            current_state= Window(FirstValue('state__state'), **window)
+        )
         return context
+
 
     def get(self, *args, **kwargs):
         if not self.request.user.is_storage_manager:
@@ -100,14 +98,13 @@ class DeliveryPersonView(LoginRequiredMixin, View):
             If the user's last transitition state is accepted then,
             it is called as Pending task for the user
         """
-        user_tasks = DeliveryTask.objects.filter(
-            states__deliverystatetransition__by=self.request.user).distinct()
-        context["pending_tasks"] = []
-        for task in user_tasks:
-            if task.states.all().order_by(
-                "-deliverystatetransition__at"
-            ).first().state == "accepted":
-                context["pending_tasks"].append(task)
+        window = {
+            'order_by':  F('at').desc(),
+        }
+
+        context["tasks"] = DeliveryStateTransition.objects.prefetch_related("task").filter(by = self.request.user, state__state='accepted').annotate(
+            current_state= Window(FirstValue('state__state'), **window)
+        ).order_by("-at")
 
         return context
 

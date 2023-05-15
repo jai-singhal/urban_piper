@@ -10,6 +10,8 @@ from avyukt.core.models import (
     DeliveryTask,
     DeliveryStateTransition
 )
+from django.db.models import F,  Window
+from django.db.models.functions import FirstValue
 
 
 class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
@@ -106,7 +108,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
     async def create_task(self, message):
         """
             Call when new task is created by storage manager,
-            TODO STEPS
+            STEPS
             1. Create new state
             2. Push the state into queue,
             3. Send the message to storage manager about the new 
@@ -129,9 +131,9 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def task_cancelled(self, message):
         """
-        TODO STEPS: 
-            1. COnsume the task
-            2. DElte the task from the database 
+        STEPS: 
+            1. Consume the task
+            2. Delete the task from the database 
             3. Send the ack and delete the task from table
             4. Send the new task from the queue to delivery person
         """
@@ -151,10 +153,10 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def task_accepted(self, message):
         """
-        TODO STEPS: 
-            1. GET THE total accepted states of current Delivery Person user, 
+        STEPS: 
+            1. GET the total accepted states of current Delivery Person user, 
             and check condition
-                If consition(more than 3 pending task) not statisifies
+                If condition(more than 3 pending task) not statisifies
                     1.1. Create new state: Accepted, assign to the task with task_id.
                     1.2. dispatch from the queue, and show next available task 
                     to other dp users
@@ -200,7 +202,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def task_declined(self, message):
         """
-        TODO STEPS: 
+        STEPS: 
             1. Create new state: declined.
             2. Enqeuue the task back again in queue
             3. Remove the task from the delivery person dashboard
@@ -244,7 +246,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
 
     async def task_completed(self, message):
         """
-        TODO STEPS: 
+        STEPS: 
             1. Create new state: Completed.
             2. Remove the task from user-dp dashboard
             3. Send the ack about the update state
@@ -367,7 +369,7 @@ class DeliveryTaskConsumer(AsyncJsonWebsocketConsumer):
         for task in user_tasks:
             if task.states.all().order_by("-deliverystatetransition__at").first().state == "accepted":
                 total_pending_task += 1
-
+        
         if total_pending_task >= 3:
             return True
         else:

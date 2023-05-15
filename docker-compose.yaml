@@ -1,0 +1,28 @@
+version: "3.6"
+volumes:
+  postgresql-data: {}
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.9.5
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  db:
+    image: postgres:14.7
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - ENV POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecurepassword
+      - POSTGRES_DB=ayuktdb

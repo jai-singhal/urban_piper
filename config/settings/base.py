@@ -98,10 +98,25 @@ CHANNEL_LAYERS = {
 
 AUTH_USER_MODEL = "users.User"
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     }
+# }
+
+DB_USER = env("DB_USER", default="postgres")
+DB_PASS = env("DB_PASS", default="mysecurepassword")
+DB_HOST = env("DB_HOST", default="localhost")
+DB_NAME = env("DB_NAME", default="ayuktdb")
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASS,
+        'PORT': '5432',
+        'HOST': DB_HOST,   # Or an IP Address that your DB is hosted on
     }
 }
 
