@@ -12,13 +12,17 @@ class RabbitMQBroker(object):
     def connect(self):
         AMQP_URL = settings.AMQP_URL
         # use cloudamqp url(if have) or use local amqp url.
-        if AMQP_URL != "localhost":
-            params = pika.URLParameters(AMQP_URL)
-            self.CONNECTION = pika.BlockingConnection(params)
-        else:
-            self.CONNECTION = pika.BlockingConnection(
-                pika.ConnectionParameters('localhost')
-            )
+        # if AMQP_URL != "localhost":
+        #     params = pika.URLParameters(AMQP_URL)
+        #     self.CONNECTION = pika.BlockingConnection(params)
+        # else:
+        #     self.CONNECTION = pika.BlockingConnection(
+        #         pika.ConnectionParameters('localhost')
+        #     )
+        self.CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(AMQP_URL)
+        )
+
 
         self.CHANNEL = self.CONNECTION.channel()
         self.CHANNEL.queue_declare(queue='high', durable=True)
@@ -51,6 +55,7 @@ class RabbitMQBroker(object):
                 if method.NAME == 'Basic.GetEmpty':
                     return None
                 else:
+                    # delivery_tag is a unique identifier assigned to each message,
                     return {
                         "message": json.loads(body),
                         "delivery_tag": method.delivery_tag,

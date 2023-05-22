@@ -1,14 +1,8 @@
-version: "3.6"
+version: "3"
 volumes:
   postgresql-data: {}
 
 services:
-  redis:
-    image: redis:latest
-    restart: always
-    ports:
-      - "6379:6379"
-
   rabbitmq:
     image: rabbitmq:3.9.5
     restart: always
@@ -26,3 +20,22 @@ services:
       - ENV POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=mysecurepassword
       - POSTGRES_DB=ayuktdb
+
+  django-app:
+    image: django-app
+    build:
+      context: .
+      dockerfile: ./Dockerfile.app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - rabbitmq
+    tty: true
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+    command: sh -c "while ! nc -z rabbitmq 5672; do sleep 1; done && python3 manage.py runserver"

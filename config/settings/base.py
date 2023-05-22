@@ -1,5 +1,7 @@
 import os
 import environ
+from dotenv import load_dotenv
+load_dotenv(".env")
 
 ROOT_DIR = (
     environ.Path(__file__) - 3
