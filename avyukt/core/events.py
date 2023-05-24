@@ -13,7 +13,7 @@ events = {
     "TASK_COMPLETED": "TASK_COMPLETED", # dp.js - after user complete the task
     "TASK_PENDING": "TASK_PENDING", # consumers - send ack to frontend about total pending task excced
 
-    "TASK_CANCELLED_ACK": "TASK_CANCELLED_ACK", # consumers - after task is cancelled, send ack tot frontend
+    "TASK_CANCELLED_ACK": "TASK_CANCELLED_ACK", # consumers - after task is cancelled, send ack to frontend
     "TASK_COMPLETED_ACK": "TASK_COMPLETED_ACK", # consumers - after task is completed - send ack to dp user
     "TASK_DECLINED_ACK": "TASK_DECLINED_ACK",  # consumers - after task is declined - send ack to dp user
     "TASK_DECLINED_ACK_SM": "TASK_DECLINED_ACK_SM",  # consumers - after task is declined - send ack to sm user

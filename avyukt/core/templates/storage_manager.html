@@ -14,9 +14,8 @@
             <table class="table table-bordered" id="sm-tasktable">
                 <thead>
                     <tr>
-                        <th>Title</th>
+                        <th>Task</th>
                         <th>Priority</th>
-                        <th>Created at</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -24,12 +23,14 @@
                     {% for task in tasks %}
                     <tr data-id="{{task.task.id}}">
                         <td class="title">{{task.task.title}}
-                            <span class="badge badge-primary badge-pill current_state">
-                                {{task.current_state | title}}
+                            <span class="badge badge-secondary current_state" style = "font-size: 9px;">
+                                {{task.current_state.state | title}}
                             </span>
+                            <br/>
+                        <span class = "text-muted" style = "font-size: 10px">Created {{ task.task.creation_at | timesince }} ago</span>
                         </td>
                         <td>{{task.task.priority}}</td>
-                        <td>{{task.task.creation_at | date:"d/m/Y g:i:s A" | lower}}</td>
+
                         <td><button class="btn btn-secondary btn-sm list_state">List States</button><br>
                             {% ifequal task.current_state "new" %}
                             <button class="btn btn-danger btn-sm cancel_task">Cancel Task</button>

@@ -6,23 +6,18 @@ import logging
 
 class RabbitMQBroker(object):
     def __init__(self):
-
         self.connect()
 
     def connect(self):
         AMQP_URL = settings.AMQP_URL
         # use cloudamqp url(if have) or use local amqp url.
-        # if AMQP_URL != "localhost":
-        #     params = pika.URLParameters(AMQP_URL)
-        #     self.CONNECTION = pika.BlockingConnection(params)
-        # else:
-        #     self.CONNECTION = pika.BlockingConnection(
-        #         pika.ConnectionParameters('localhost')
-        #     )
-        self.CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters(AMQP_URL)
-        )
-
+        if AMQP_URL != "localhost":
+            params = pika.URLParameters(AMQP_URL)
+            self.CONNECTION = pika.BlockingConnection(params)
+        else:
+            self.CONNECTION = pika.BlockingConnection(
+                pika.ConnectionParameters('localhost')
+            )
 
         self.CHANNEL = self.CONNECTION.channel()
         self.CHANNEL.queue_declare(queue='high', durable=True)

@@ -126,6 +126,14 @@ function display_new_task(message) {
         </td>
     </tr>`)
 }
+function toTitleCase(str) {
+    return str.replace(
+      /\w\S*/g,
+      function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      }
+    );
+  }
 
 function display_states(message) {
     let content = "";
@@ -134,20 +142,31 @@ function display_states(message) {
         content += `
         ${ ((i == 0 || i%4 == 0) && "<div class = 'row margin-below'>") || "" }
         <div class = 'col-sm-12 col-md-6 col-lg-3'>
-            <div class = 'card'>
-                <div class = "card-header">
-                    State - ${i+1}
-                </div>
-                <div class = 'card-body'>
-                    <p> A state <span class = 'font-weight-bold text-success '>
-                    ${item["state"]}</span>
-                    created at <span class = 'font-weight-bold text-warning'>
-                        ${formatDate(new Date(item["at"]))}
-                    </span> by <span class ='text-info font-weight-bold'>
-                    ${item["by"] || ""} </span>
-                    </p>
-                </div>
-            </div>
+        <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-flag"></i> State - ${i+1}
+            </h6>
+        </div>
+        <div class="card-body" style = "margin-bottom: -20px;">
+            <p class="mb-0 text-primary">
+                ${toTitleCase(item["state"])}
+            </p>
+            <p style = "font-size: 13px;">
+            By 
+            <span class="text-info font-weight-lighter" >
+                ${item["by"] || ""}
+            </span>
+            </p>
+        </div>
+        <div class="card-body">
+        <span style = "font-size: 12px;" class="text-muted text-warning" title="${formatDate(new Date(item["at"]))}">
+        Updated ${moment(new Date(item["at"])).fromNow()}
+    </span>
+
+        </div>
+
+    </div>
         </div>
         ${ ((i != 0 && (i+1)%4 == 0) && "</div>") || "" }
         `;

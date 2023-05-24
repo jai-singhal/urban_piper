@@ -134,20 +134,27 @@ function display_states(message) {
         content += `
         ${ ((i == 0 || i%4 == 0) && "<div class = 'row margin-below'>") || "" }
         <div class = 'col-sm-12 col-md-6 col-lg-3'>
-            <div class = 'card'>
-                <div class = "card-header">
-                    State - ${i+1}
-                </div>
-                <div class = 'card-body'>
-                    <p> A state <span class = 'font-weight-bold text-success '>
-                    ${item["state"]}</span>
-                    created at <span class = 'font-weight-bold text-warning'>
-                        ${formatDate(new Date(item["at"]))}
-                    </span> by <span class ='text-info font-weight-bold'>
-                    ${item["by"] || ""} </span>
-                    </p>
-                </div>
-            </div>
+        <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-flag"></i> State - ${i+1}
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">
+                <i class="fas fa-info-circle"></i>
+                ${item["state"]} created 
+                <span class="font-weight-bold text-warning" title="${formatDate(new Date(item["at"]))}">
+                    ${moment(new Date(item["at"])).fromNow()}
+                </span>
+                by 
+                <span class="text-info font-weight-bold">
+                    ${item["by"] || ""}
+                </span>
+            </p>
+        </div>
+    </div>
+        </div>
         </div>
         ${ ((i != 0 && (i+1)%4 == 0) && "</div>") || "" }
         `;
@@ -177,5 +184,4 @@ function task_declined(message){
 
       </div>`
     ).fadeIn(500);
-
 }

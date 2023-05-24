@@ -31,15 +31,16 @@ class StorageManagerView(LoginRequiredMixin, View):
             last known state
         """
 
-        window = {
-            'order_by':  F('at').desc()
-        }
+        tasks = DeliveryTask.objects.filter(
+            created_by=self.request.user).prefetch_related("states").order_by("-creation_at")
+        context["tasks"] = []
+        for task in tasks:
+            context["tasks"].append({
+                "current_state": task.states.order_by("-deliverystatetransition__at").first(),
+                "task": task
+            })
 
-        context["tasks"] = DeliveryStateTransition.objects.prefetch_related("task").filter(task__created_by = self.request.user).annotate(
-            current_state= Window(FirstValue('state__state'), **window)
-        )
         return context
-
 
     def get(self, *args, **kwargs):
         if not self.request.user.is_storage_manager:
@@ -98,14 +99,13 @@ class DeliveryPersonView(LoginRequiredMixin, View):
             If the user's last transitition state is accepted then,
             it is called as Pending task for the user
         """
-        window = {
-            'order_by':  F('at').desc(),
-        }
+        user_tasks = DeliveryTask.objects.prefetch_related("states").filter(states__deliverystatetransition__by=self.request.user).distinct()
+        context["pending_tasks"] = []
 
-        context["tasks"] = DeliveryStateTransition.objects.prefetch_related("task").filter(by = self.request.user, state__state='accepted').annotate(
-            current_state= Window(FirstValue('state__state'), **window)
-        ).order_by("-at")
-
+        for task in user_tasks:
+            latest_state = task.states.order_by("-deliverystatetransition__at").first()
+            if latest_state.state == "accepted":
+                context["pending_tasks"].append(task)
         return context
 
     def get(self, *args, **kwargs):
